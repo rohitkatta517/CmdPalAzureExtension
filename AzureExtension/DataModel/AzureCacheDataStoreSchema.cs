@@ -195,7 +195,8 @@ public class AzureCacheDataStoreSchema : IDataStoreSchema
         "TargetBranch TEXT NOT NULL COLLATE NOCASE," +
         "CreationDate INTEGER NOT NULL," +
         "HtmlUrl TEXT NOT NULL COLLATE NOCASE" +
-    ");";
+    ");" +
+    "CREATE INDEX IDX_PullRequest_CreationDate ON PullRequest (CreationDate DESC);";
 
     private const string PullRequestSearchPullRequest =
     @"CREATE TABLE PullRequestSearchPullRequest (" +

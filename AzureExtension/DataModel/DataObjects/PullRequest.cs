@@ -125,7 +125,10 @@ public class PullRequest : IPullRequest
 
     public static IEnumerable<PullRequest> GetForPullRequestSearch(DataStore dataStore, PullRequestSearch pullRequestSearch)
     {
-        var sql = @"SELECT * FROM PullRequest WHERE Id IN (SELECT PullRequest FROM PullRequestSearchPullRequest WHERE PullRequestSearch = @PullRequestSearchId ORDER BY TimeUpdated ASC)";
+        var sql = @"SELECT PR.* FROM PullRequest PR 
+                    INNER JOIN PullRequestSearchPullRequest PRSP ON PR.Id = PRSP.PullRequest 
+                    WHERE PRSP.PullRequestSearch = @PullRequestSearchId 
+                    ORDER BY PR.CreationDate DESC, PRSP.TimeUpdated DESC";
         var param = new
         {
             PullRequestSearchId = pullRequestSearch.Id,
