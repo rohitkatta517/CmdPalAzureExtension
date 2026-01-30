@@ -2,6 +2,7 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using AzureExtension.Client;
 using AzureExtension.Controls;
 using AzureExtension.Data;
 using Dapper;
@@ -71,7 +72,9 @@ public class PullRequest : IPullRequest
         var repository = Repository.Get(dataStore, repositoryId);
 
         // Url in the GitPullRequest object is a REST Api Url, and the links lack an html Url, so we must build it.
-        pullRequest.HtmlUrl = $"{repository.CloneUrl}/pullrequest/{gitPullRequest.PullRequestId}";
+        pullRequest.HtmlUrl = AzureUrlBuilder.BuildPullRequestUrl(
+            repository.CloneUrl,
+            gitPullRequest.PullRequestId);
 
         pullRequest.Id = dataStore.Connection.Insert(pullRequest);
         return pullRequest;

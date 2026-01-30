@@ -533,7 +533,9 @@ public class AzureUri
             return false;
         }
 
-        if (!Uri.Host.Equals("dev.azure.com", StringComparison.OrdinalIgnoreCase))
+        // Support both modern (dev.azure.com) and legacy (visualstudio.com) hosts
+        if (!Uri.Host.Equals("dev.azure.com", StringComparison.OrdinalIgnoreCase) &&
+            !Uri.Host.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }

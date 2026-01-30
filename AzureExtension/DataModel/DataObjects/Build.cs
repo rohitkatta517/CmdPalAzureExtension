@@ -2,6 +2,7 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using AzureExtension.Client;
 using AzureExtension.Controls;
 using AzureExtension.Data;
 using AzureExtension.Helpers;
@@ -143,30 +144,16 @@ public class Build : IBuild
         var rowsDeleted = command.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Converts an Azure DevOps API URL to a human-readable HTML URL for the build results page.
+    /// Supports both modern (dev.azure.com) and legacy (visualstudio.com) URL formats.
+    /// </summary>
+    /// <param name="url">The API URL from the build object.</param>
+    /// <param name="projectName">The project name.</param>
+    /// <param name="buildId">The build ID.</param>
+    /// <returns>The HTML URL for viewing the build results.</returns>
     public static string ConvertBuildUrlToHtmlUrl(string url, string projectName, long buildId)
     {
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            throw new ArgumentException("URL cannot be null or empty.", nameof(url));
-        }
-
-        try
-        {
-            var uri = new Uri(url);
-
-            var segments = uri.Segments;
-            if (segments.Length < 4)
-            {
-                throw new InvalidOperationException("The URL does not have the expected structure.");
-            }
-
-            var organization = segments[1].TrimEnd('/');
-
-            return $"https://dev.azure.com/{organization}/{projectName}/_build/results?buildId={buildId}&view=results";
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("Failed to convert the URL to the desired format.", ex);
-        }
+        return AzureUrlBuilder.BuildBuildResultsUrl(url, projectName, buildId);
     }
 }
