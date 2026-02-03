@@ -9,13 +9,22 @@ using AzureExtension.Helpers;
 using Dapper;
 using Dapper.Contrib.Extensions;
 using Microsoft.TeamFoundation.Build.WebApi;
+using Serilog;
 
 namespace AzureExtension.DataModel;
 
+/// <summary>
+/// Represents a build definition (pipeline) in Azure DevOps.
+/// </summary>
 [Table("Definition")]
 public class Definition : IDefinition
 {
-    private static readonly long _updateThreshold = TimeSpan.FromMinutes(1).Ticks;
+    private static readonly ILogger _log = Log.ForContext("SourceContext", $"DataModel/{nameof(Definition)}");
+
+    // This is the time between seeing a potential updated Definition record and updating it.
+    // This value / 2 is the average time between Definition updating their Definition data and
+    // having it reflected in the datastore.
+    private static readonly long _updateThreshold = TimeSpan.FromHours(4).Ticks;
 
     [Key]
     public long Id { get; set; } = DataStore.NoForeignKey;
@@ -47,6 +56,13 @@ public class Definition : IDefinition
     [Computed]
     public DateTime UpdatedAt => TimeUpdated.ToDateTime();
 
+    /// <summary>
+    /// Creates a new Definition instance from a DefinitionReference.
+    /// </summary>
+    /// <param name="dataStore">The data store instance.</param>
+    /// <param name="definitionReference">The definition reference from Azure DevOps API.</param>
+    /// <param name="projectId">The project ID this definition belongs to.</param>
+    /// <returns>A new Definition instance.</returns>
     private static Definition Create(
         DataStore dataStore,
         DefinitionReference definitionReference,
@@ -65,10 +81,22 @@ public class Definition : IDefinition
         return definition;
     }
 
+    /// <summary>
+    /// Retrieves a definition by its internal Azure DevOps ID.
+    /// </summary>
+    /// <param name="dataStore">The data store instance.</param>
+    /// <param name="internalId">The internal Azure DevOps definition ID.</param>
+    /// <returns>The definition if found; otherwise, null.</returns>
     public static Definition? GetByInternalId(DataStore dataStore, long internalId)
     {
-        var sql = "SELECT * FROM Definition WHERE InternalId = @InternalId";
-        var definition = dataStore.Connection.QuerySingleOrDefault<Definition>(sql, new { InternalId = internalId });
+        var sql = @"SELECT * FROM Definition WHERE InternalId = @InternalId";
+        var param = new
+        {
+            InternalId = internalId,
+        };
+
+        _log.Debug(DataStore.GetSqlLogMessage(sql, param));
+        var definition = dataStore.Connection!.QuerySingleOrDefault<Definition>(sql, param, null);
 
         if (definition != null)
         {
@@ -78,26 +106,49 @@ public class Definition : IDefinition
         return definition;
     }
 
+    /// <summary>
+    /// Adds a new definition or updates an existing one based on the internal ID.
+    /// Updates are only performed if the time threshold has been exceeded to avoid
+    /// unnecessary database operations for data that rarely changes.
+    /// </summary>
+    /// <param name="dataStore">The data store instance.</param>
+    /// <param name="definition">The definition to add or update.</param>
+    /// <returns>The definition instance after the operation.</returns>
     public static Definition AddOrUpdate(DataStore dataStore, Definition definition)
     {
         var existingDefinition = GetByInternalId(dataStore, definition.InternalId);
         if (existingDefinition != null)
         {
-            if (definition.TimeUpdated - existingDefinition.TimeUpdated < _updateThreshold)
+            // Many of the same Definition records will be created on a sync, and to
+            // avoid unnecessary updating and database operations for data that
+            // is extremely unlikely to have changed in any significant way, we
+            // will only update every UpdateThreshold amount of time.
+            if ((definition.TimeUpdated - existingDefinition.TimeUpdated) > _updateThreshold)
+            {
+                definition.Id = existingDefinition.Id;
+                dataStore.Connection!.Update(definition);
+                definition.DataStore = dataStore;
+                return definition;
+            }
+            else
             {
                 return existingDefinition;
             }
-
-            definition.Id = existingDefinition.Id;
-            dataStore.Connection.Update(definition);
-            return existingDefinition;
         }
 
+        // No existing definition, add it.
+        definition.Id = dataStore.Connection!.Insert(definition);
         definition.DataStore = dataStore;
-        definition.Id = dataStore.Connection.Insert(definition);
         return definition;
     }
 
+    /// <summary>
+    /// Gets an existing definition or creates a new one from a DefinitionReference.
+    /// </summary>
+    /// <param name="dataStore">The data store instance.</param>
+    /// <param name="definitionReference">The definition reference from Azure DevOps API.</param>
+    /// <param name="projectId">The project ID this definition belongs to.</param>
+    /// <returns>The definition instance.</returns>
     public static Definition GetOrCreate(
         DataStore dataStore,
         DefinitionReference definitionReference,
@@ -107,15 +158,22 @@ public class Definition : IDefinition
         return AddOrUpdate(dataStore, definition);
     }
 
+    /// <summary>
+    /// Retrieves all definitions for a specific project.
+    /// </summary>
+    /// <param name="dataStore">The data store instance.</param>
+    /// <param name="projectId">The project ID to retrieve definitions for.</param>
+    /// <returns>An enumerable collection of definitions.</returns>
     public static IEnumerable<Definition> GetAll(DataStore dataStore, long projectId)
     {
-        var sql = "SELECT * FROM Definition WHERE ProjectId = @ProjectId";
+        var sql = @"SELECT * FROM Definition WHERE ProjectId = @ProjectId";
         var param = new
         {
             ProjectId = projectId,
         };
 
-        var definitions = dataStore.Connection.Query<Definition>(sql, param);
+        _log.Debug(DataStore.GetSqlLogMessage(sql, param));
+        var definitions = dataStore.Connection!.Query<Definition>(sql, param, null);
         foreach (var definition in definitions)
         {
             definition.DataStore = dataStore;
@@ -124,12 +182,19 @@ public class Definition : IDefinition
         return definitions;
     }
 
+    /// <summary>
+    /// Deletes definitions that are not referenced by any builds.
+    /// This is used for cleanup to remove orphaned definition records.
+    /// </summary>
+    /// <param name="dataStore">The data store instance.</param>
     public static void DeleteUnreferenced(DataStore dataStore)
     {
-        var sql = "DELETE FROM Definition WHERE (Id NOT IN (SELECT DISTINCT DefinitionId FROM Build))";
+        var sql = @"DELETE FROM Definition WHERE Id NOT IN (SELECT DISTINCT DefinitionId FROM Build)";
         var command = dataStore.Connection!.CreateCommand();
         command.CommandText = sql;
-        command.ExecuteNonQuery();
+        _log.Debug(DataStore.GetCommandLogMessage(sql, command));
+        var rowsDeleted = command.ExecuteNonQuery();
+        _log.Debug(DataStore.GetDeletedLogMessage(rowsDeleted));
     }
 
     /// <summary>
