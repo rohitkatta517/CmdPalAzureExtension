@@ -4,13 +4,21 @@
 
   <PropertyGroup>
 	  <RootNamespace>AzureExtension.Test</RootNamespace>
-	  <Platforms>x64;arm64</Platforms>
+	  <Platforms>x64</Platforms>
 	  <IsPackable>false</IsPackable>
 	  <ImplicitUsings>enable</ImplicitUsings>
 	  <Nullable>enable</Nullable>
 	  <UseWinUI>true</UseWinUI>
 	  <Optimize>true</Optimize>
-	  <ProjectPriFileName>resources.pri</ProjectPriFileName>
+	  <GeneratePriFile>false</GeneratePriFile>
+	  <EnableMsixTooling>false</EnableMsixTooling>
+	  <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
+	  <AppxGetPackagePropertiesEnabled>false</AppxGetPackagePropertiesEnabled>
+	  <IncludeProjectPriFile>false</IncludeProjectPriFile>
+	  <EnableCoreMrtTooling>false</EnableCoreMrtTooling>
+	  <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+	  <PlatformTarget>x64</PlatformTarget>
+	  <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
 
   <ItemGroup>

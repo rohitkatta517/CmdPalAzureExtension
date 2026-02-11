@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35707.178
@@ -14,10 +14,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureExtension.Test", "Azur
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|ARM64 = Debug|ARM64
 		Debug|x64 = Debug|x64
-		Release|ARM64 = Release|ARM64
+		Debug|ARM64 = Debug|ARM64
 		Release|x64 = Release|x64
+		Release|ARM64 = Release|ARM64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{7B778B31-9A2B-459C-9278-DB0936757929}.Debug|ARM64.ActiveCfg = Debug|ARM64
@@ -48,3 +48,4 @@ Global
 		SolutionGuid = {FA945D61-456E-4BAA-9BD7-9DCE077B1FFA}
 	EndGlobalSection
 EndGlobal
+

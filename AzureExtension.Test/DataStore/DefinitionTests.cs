@@ -7,6 +7,7 @@ using AzureExtension.DataModel;
 using Dapper;
 using Dapper.Contrib.Extensions;
 using Microsoft.TeamFoundation.Build.WebApi;
+using Microsoft.TeamFoundation.Core.WebApi;
 
 namespace AzureExtension.Test;
 
@@ -55,11 +56,14 @@ public class DefinitionTests
         tx.Commit();
 
         // Create first definition
+        var testProject = new TeamProjectReference { Name = "TestProject" };
         var defRef1 = new DefinitionReference
         {
             Id = 123,
             Name = "Test Pipeline",
             CreatedDate = DateTime.UtcNow.AddDays(-1),
+            Url = "https://dev.azure.com/testorg/TestProject/_apis/build/Definitions/123",
+            Project = testProject,
         };
 
         var definition1 = Definition.GetOrCreate(dataStore, defRef1, project.Id);
@@ -74,6 +78,8 @@ public class DefinitionTests
             Id = 123,
             Name = "Test Pipeline Updated",
             CreatedDate = DateTime.UtcNow.AddDays(-1),
+            Url = "https://dev.azure.com/testorg/TestProject/_apis/build/Definitions/123",
+            Project = testProject,
         };
 
         var definition2 = Definition.GetOrCreate(dataStore, defRef2, project.Id);
@@ -103,11 +109,14 @@ public class DefinitionTests
         tx.Commit();
 
         // Create first definition
+        var testProject = new TeamProjectReference { Name = "TestProject" };
         var defRef1 = new DefinitionReference
         {
             Id = 456,
             Name = "Old Pipeline",
             CreatedDate = DateTime.UtcNow.AddDays(-1),
+            Url = "https://dev.azure.com/testorg/TestProject/_apis/build/Definitions/456",
+            Project = testProject,
         };
 
         var definition1 = Definition.GetOrCreate(dataStore, defRef1, project.Id);
@@ -131,6 +140,8 @@ public class DefinitionTests
             Id = 456,
             Name = "Updated Pipeline",
             CreatedDate = DateTime.UtcNow.AddDays(-1),
+            Url = "https://dev.azure.com/testorg/TestProject/_apis/build/Definitions/456",
+            Project = testProject,
         };
 
         var definition2 = Definition.GetOrCreate(dataStore, defRef2, project.Id);
@@ -159,11 +170,14 @@ public class DefinitionTests
         dataStore.Connection.Insert(project);
         tx.Commit();
 
+        var testProject = new TeamProjectReference { Name = "TestProject" };
         var defRef = new DefinitionReference
         {
             Id = 789,
             Name = "Test Pipeline",
             CreatedDate = DateTime.UtcNow,
+            Url = "https://dev.azure.com/testorg/TestProject/_apis/build/Definitions/789",
+            Project = testProject,
         };
 
         Definition.GetOrCreate(dataStore, defRef, project.Id);

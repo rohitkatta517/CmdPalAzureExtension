@@ -476,10 +476,10 @@ public partial class AzureUriTests
         azureUri = new AzureUri(invalidDefinitionIdUri);
         Assert.IsFalse(azureUri.IsDefinition);
 
-        // Invalid: wrong host
-        var wrongHostUri = "https://organization.visualstudio.com/project/_build?definitionId=123";
-        azureUri = new AzureUri(wrongHostUri);
-        Assert.IsFalse(azureUri.IsDefinition);
+        // Valid: legacy visualstudio.com host is a supported Azure DevOps format
+        var legacyHostUri = "https://organization.visualstudio.com/project/_build?definitionId=123";
+        azureUri = new AzureUri(legacyHostUri);
+        Assert.IsTrue(azureUri.IsDefinition);
 
         // Invalid: extra path segments after _build
         var extraSegmentUri = "https://dev.azure.com/organization/project/_build/extra?definitionId=123";
