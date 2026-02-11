@@ -114,6 +114,10 @@ This registers the loose build layout directly — no certificate signing requir
 - You **must** uninstall the old version first, or you'll get a `0x80073CFB` package conflict error
 - Do **not** use `Add-AppxPackage -Path *.msix` — the `.msix` is unsigned and will fail with publisher errors
 - The `CertSignAndInstall.ps1` script requires an **admin elevated Developer Command Prompt** (for the `Cert:` drive and `SignTool`) — it won't work from a regular terminal
+- You **must kill `AzureExtension.exe`** before rebuilding — the running COM server locks the exe, causing MSB3027 file lock errors. Use: `powershell.exe -command "Stop-Process -Name AzureExtension -Force -ErrorAction SilentlyContinue"`
+- Dev package points to `BuildOutput/` directly — after initial registration, rebuilding updates the code in place **without re-registering**
+- The **persistent DB (`PersistentAzureData.db`) survives uninstall/reinstall** — it lives in `LocalState/`. Delete it manually for a clean slate: `Remove-Item '%localappdata%\Packages\Microsoft.CmdPalAzureExtension_8wekyb3d8bbwe\LocalState\*.db' -Force`
+- **Bump version in `Package.appxmanifest`** to verify correct build is deployed (visible via `Get-AppxPackage` and in startup logs)
 
 **Signed install (for distribution):**
 
@@ -128,6 +132,15 @@ Extension logs are located at:
 ```
 %localappdata%\Packages\Microsoft.CmdPalAzureExtension_8wekyb3d8bbwe\TempState
 ```
+
+Log files are named `log{date}.dhlog` and include structured Serilog output with source context.
+
+### Known Architecture Pitfalls
+
+- **`CacheManager.Update()` switch must include all `DataUpdateType` values** — missing a case hits `default: throw ArgumentOutOfRangeException`, leaving the state machine stuck in `RefreshingState` forever. When adding a new `DataUpdateType`, update the switch in `CacheManager.cs`.
+- **`AzureDataManager.PerformUpdateAsync()` swallows errors silently** — catches exceptions and logs them but does NOT raise `OnUpdate` with `DataManagerUpdateKind.Error`, so CacheManager never transitions back to Idle after a failure. This is a pre-existing design issue.
+- **`AzureUri` should be used for all URL parsing** — users paste full ADO URLs (repo, query, pipeline). Use `AzureUri` to extract `Connection` (org URL) and `Project` rather than asking users for separate fields. Don't use ambiguous labels like "Project Name" — users confuse it with display names or repo names.
+- **Deduplicate API calls where possible** — e.g., `GetWorkItemTypeAsync` should be called once per unique type name, not once per work item. Cache results in a dictionary keyed by type name.
 
 ## Architecture Overview
 
