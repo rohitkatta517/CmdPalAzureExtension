@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text.Json.Nodes;
+using AzureExtension.Client;
 using AzureExtension.Helpers;
 using AzureExtension.PersistentData;
 using Microsoft.CommandPalette.Extensions;
@@ -20,15 +21,26 @@ public sealed class SaveProjectSettingsForm : FormContent
 
     public bool IsEditing => _existingSearch != null;
 
+    private string ExistingUrlValue
+    {
+        get
+        {
+            if (_existingSearch == null)
+            {
+                return string.Empty;
+            }
+
+            // Reconstruct a displayable URL from org + project
+            return $"{_existingSearch.OrganizationUrl.TrimEnd('/')}/{_existingSearch.ProjectName}";
+        }
+    }
+
     private Dictionary<string, string> TemplateSubstitutions => new()
     {
         { "{{SaveProjectSettingsFormTitle}}", IsEditing ? "Edit Project" : "Add a Project" },
-        { "{{OrganizationUrlLabel}}", "Organization URL" },
-        { "{{OrganizationUrlErrorMessage}}", "Organization URL is required" },
-        { "{{OrganizationUrlValue}}", _existingSearch?.OrganizationUrl ?? string.Empty },
-        { "{{ProjectNameLabel}}", "Project Name" },
-        { "{{ProjectNameErrorMessage}}", "Project name is required" },
-        { "{{ProjectNameValue}}", _existingSearch?.ProjectName ?? string.Empty },
+        { "{{AzureDevOpsUrlLabel}}", "Azure DevOps URL" },
+        { "{{AzureDevOpsUrlErrorMessage}}", "A valid Azure DevOps URL is required" },
+        { "{{AzureDevOpsUrlValue}}", ExistingUrlValue },
         { "{{SaveProjectSettingsActionTitle}}", "Save Project" },
     };
 
@@ -49,17 +61,29 @@ public sealed class SaveProjectSettingsForm : FormContent
         try
         {
             var payloadJson = JsonNode.Parse(inputs);
-            var organizationUrl = payloadJson?["OrganizationUrl"]?.ToString()?.Trim() ?? string.Empty;
-            var projectName = payloadJson?["ProjectName"]?.ToString()?.Trim() ?? string.Empty;
+            var url = payloadJson?["AzureDevOpsUrl"]?.ToString()?.Trim() ?? string.Empty;
 
-            if (string.IsNullOrEmpty(organizationUrl) || string.IsNullOrEmpty(projectName))
+            if (string.IsNullOrEmpty(url))
             {
-                ToastHelper.ShowErrorToast("Organization URL and project name are required.");
+                ToastHelper.ShowErrorToast("Azure DevOps URL is required.");
                 return CommandResult.KeepOpen();
             }
 
-            // Normalize: ensure URL doesn't end with /
-            organizationUrl = organizationUrl.TrimEnd('/');
+            var azureUri = new AzureUri(url);
+            if (!azureUri.IsValid || string.IsNullOrEmpty(azureUri.Organization))
+            {
+                ToastHelper.ShowErrorToast("Could not parse the URL. Use a URL like https://dev.azure.com/myorg/myproject");
+                return CommandResult.KeepOpen();
+            }
+
+            var organizationUrl = azureUri.Connection.ToString().TrimEnd('/');
+            var projectName = azureUri.Project;
+
+            if (string.IsNullOrEmpty(projectName))
+            {
+                ToastHelper.ShowErrorToast("Could not find a project in the URL. Include the project, e.g. https://dev.azure.com/myorg/myproject");
+                return CommandResult.KeepOpen();
+            }
 
             // If editing and the org/project key changed, remove the old entry first
             if (IsEditing &&

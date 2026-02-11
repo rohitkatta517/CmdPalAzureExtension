@@ -14,21 +14,12 @@
     },
     {
       "type": "Input.Text",
-      "id": "OrganizationUrl",
-      "label": "{{OrganizationUrlLabel}}",
+      "id": "AzureDevOpsUrl",
+      "label": "{{AzureDevOpsUrlLabel}}",
       "isRequired": true,
-      "errorMessage": "{{OrganizationUrlErrorMessage}}",
-      "value": "{{OrganizationUrlValue}}",
-      "placeholder": "https://dev.azure.com/myorg"
-    },
-    {
-      "type": "Input.Text",
-      "id": "ProjectName",
-      "label": "{{ProjectNameLabel}}",
-      "isRequired": true,
-      "errorMessage": "{{ProjectNameErrorMessage}}",
-      "value": "{{ProjectNameValue}}",
-      "placeholder": "MyProject"
+      "errorMessage": "{{AzureDevOpsUrlErrorMessage}}",
+      "value": "{{AzureDevOpsUrlValue}}",
+      "placeholder": "https://dev.azure.com/myorg/myproject"
     }
   ],
   "actions": [

@@ -122,6 +122,8 @@ public class AzureDataMyWorkItemsManager
 
     public async Task UpdateMyWorkItemsAsync(IMyWorkItemsSearch search, CancellationToken cancellationToken)
     {
+        _log.Information("Updating My Work Items for {Project} at {Org}", search.ProjectName, search.OrganizationUrl);
+
         var account = await _accountProvider.GetDefaultAccountAsync();
         var connectionUri = new Uri(search.OrganizationUrl);
         var vssConnection = await _connectionProvider.GetVssConnectionAsync(connectionUri, account);
@@ -131,10 +133,12 @@ public class AzureDataMyWorkItemsManager
         var project = Project.Get(_dataStore, search.ProjectName, org.Id);
         if (project is null)
         {
+            _log.Information("Project {Project} not cached, fetching from ADO", search.ProjectName);
             var teamProject = await _liveDataProvider.GetTeamProject(vssConnection, search.ProjectName);
             project = Project.GetOrCreateByTeamProject(_dataStore, teamProject, org.Id);
         }
 
+        _log.Information("Running WIQL query for project {Project} (InternalId: {Id})", search.ProjectName, project.InternalId);
         var queryResult = await _liveDataProvider.QueryByWiqlAsync(vssConnection, project.InternalId, _wiqlTemplate, cancellationToken);
 
         var workItemIds = new List<int>();
@@ -148,6 +152,8 @@ public class AzureDataMyWorkItemsManager
                 }
             }
         }
+
+        _log.Information("WIQL returned {Count} work item IDs", workItemIds.Count);
 
         var workItems = new List<TFModels.WorkItem>();
         if (workItemIds.Count > 0)
@@ -170,29 +176,42 @@ public class AzureDataMyWorkItemsManager
             }
         }
 
+        _log.Information("Fetched {Count} work items, processing types", workItems.Count);
+
         var queryId = GetQueryIdForSearch(search);
         var dsQuery = Query.GetOrCreate(_dataStore, queryId, project.Id, account.Username, search.Name);
 
-        var workItemTasks = new List<Task<TFModels.WorkItemType>>();
-        foreach (var workItem in workItems)
+        // Deduplicate work item type lookups — only fetch each unique type once
+        var uniqueTypeNames = workItems
+            .Select(w => w.Fields["System.WorkItemType"].ToString()!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var typeTasksByName = new Dictionary<string, Task<TFModels.WorkItemType>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var typeName in uniqueTypeNames)
         {
-            var fieldValue = workItem.Fields["System.WorkItemType"].ToString();
-            var wiTask = _liveDataProvider.GetWorkItemTypeAsync(vssConnection, project.InternalId, fieldValue, cancellationToken);
-            workItemTasks.Add(wiTask);
+            typeTasksByName[typeName] = _liveDataProvider.GetWorkItemTypeAsync(vssConnection, project.InternalId, typeName, cancellationToken);
         }
 
-        var workItemTypeResults = await Task.WhenAll(workItemTasks);
+        await Task.WhenAll(typeTasksByName.Values);
 
-        for (var i = 0; i < workItemTypeResults.Length; i++)
+        var typeCache = new Dictionary<string, TFModels.WorkItemType>(StringComparer.OrdinalIgnoreCase);
+        foreach (var kvp in typeTasksByName)
         {
-            var workItemTypeInfo = workItemTypeResults[i];
-            var workItem = workItems[i];
+            typeCache[kvp.Key] = kvp.Value.Result;
+        }
+
+        foreach (var workItem in workItems)
+        {
+            var typeName = workItem.Fields["System.WorkItemType"].ToString()!;
+            var workItemTypeInfo = typeCache[typeName];
 
             var cmdPalWorkItem = WorkItem.GetOrCreate(_dataStore, workItem, vssConnection, _liveDataProvider, project.Id, workItemTypeInfo);
             QueryWorkItem.AddWorkItemToQuery(_dataStore, dsQuery.Id, cmdPalWorkItem.Id);
         }
 
         QueryWorkItem.DeleteBefore(_dataStore, dsQuery, DateTime.UtcNow - _queryWorkItemDeletionTime);
+        _log.Information("My Work Items update complete for {Project}: {Count} items", search.ProjectName, workItems.Count);
     }
 
     public void PruneObsoleteData()
