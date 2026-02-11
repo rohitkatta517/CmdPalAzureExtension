@@ -93,10 +93,34 @@ dotnet test --filter "TestCategory!=LiveData"
 
 ### Installing Locally
 
-1. Uninstall any existing version of the extension from Command Palette
-2. Build the project
-3. If running as admin, the package will be automatically signed
-4. Install the `.msix` package from `BuildOutput/` directory
+**Quick deploy (recommended for development):**
+```powershell
+# 1. Build
+.\build\scripts\Build.ps1 -Platform x64
+
+# 2. Uninstall existing version (if installed)
+powershell.exe -command "Get-AppxPackage *CmdPalAzure* | Remove-AppxPackage"
+
+# 3. Register as dev package (no signing needed)
+powershell.exe -command "Add-AppxPackage -Register 'BuildOutput\Debug\x64\AzureExtension\AppxManifest.xml'"
+
+# 4. Verify installation
+powershell.exe -command "Get-AppxPackage *CmdPalAzure*"
+```
+
+This registers the loose build layout directly — no certificate signing required. The AppxManifest is at `BuildOutput/Debug/x64/AzureExtension/AppxManifest.xml`.
+
+**Important notes:**
+- You **must** uninstall the old version first, or you'll get a `0x80073CFB` package conflict error
+- Do **not** use `Add-AppxPackage -Path *.msix` — the `.msix` is unsigned and will fail with publisher errors
+- The `CertSignAndInstall.ps1` script requires an **admin elevated Developer Command Prompt** (for the `Cert:` drive and `SignTool`) — it won't work from a regular terminal
+
+**Signed install (for distribution):**
+
+If running as admin in a Developer Command Prompt:
+```powershell
+powershell -command "& { . build\scripts\CertSignAndInstall.ps1; Invoke-SignPackage BuildOutput\Debug\x64\AppxPackages\AzureExtension_*_x64_Debug_Test\AzureExtension_*_x64_Debug.msix }"
+```
 
 ### Logging
 
