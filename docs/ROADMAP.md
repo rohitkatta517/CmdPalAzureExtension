@@ -17,7 +17,7 @@ The current extension provides basic Azure DevOps integration: saved queries (wo
 - **What**: Top-level command showing work items assigned to the current user in non-Closed states. Works immediately after sign-in -- no saved query needed.
 - **How**: Uses `WorkItemTrackingHttpClient.QueryByWiqlAsync` with WIQL: `[System.AssignedTo] = @Me AND [System.State] <> 'Closed' AND [System.State] <> 'Removed'`
 - **Scope**: Medium (~1 week)
-- **Status**: In Progress
+- **Status**: Done
 - **Key changes**:
   - Add `QueryByWiqlAsync` to `IAzureLiveDataProvider` / `AzureLiveDataProvider`
   - New `MyWorkItemsSearch` class (built-in search, no URL input needed)
@@ -33,16 +33,21 @@ The current extension provides basic Azure DevOps integration: saved queries (wo
   - `AzureExtension\Program.cs`
 
 #### F2. Team Kanban Board Quick Launch
-- **What**: Top-level deep link to open the team's Kanban board in browser. Constructed from saved org/project data.
+- **What**: Top-level deep link to open the team's Kanban board in browser. Paste any board URL, auto-extracts team name and backlog level for display.
 - **URL pattern**: `https://dev.azure.com/{org}/{project}/_boards/board/t/{team}/Backlog%20items`
 - **Scope**: Small (~1-2 days)
-- **Status**: Not Started
+- **Status**: Done
 - **Key changes**:
-  - Extend `AzureUrlBuilder` with board/backlog URL patterns
-  - Add as a top-level command using existing `LinkCommand`
-  - Could include sub-links: Board, Backlog, Sprints, Queries hub
+  - New `BoardLink` data model + `BoardLinkRepository` for persistent storage
+  - `SaveBoardLinkForm` with URL parsing to extract team/backlog display name
+  - `SavedBoardLinksPage` for managing saved links
+  - Each saved link appears as a top-level `BoardLinkCommand` (opens in browser)
 - **Key files**:
-  - `AzureExtension\Client\AzureUrlBuilder.cs`
+  - `AzureExtension\PersistentData\BoardLinks\BoardLink.cs`
+  - `AzureExtension\PersistentData\BoardLinks\BoardLinkRepository.cs`
+  - `AzureExtension\Controls\Forms\SaveBoardLinkForm.cs`
+  - `AzureExtension\Controls\Pages\SavedBoardLinksPage.cs`
+  - `AzureExtension\Controls\Commands\BoardLinkCommand.cs`
   - `AzureExtension\AzureExtensionCommandProvider.cs`
 
 ---
