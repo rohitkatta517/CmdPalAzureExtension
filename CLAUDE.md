@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Command Palette Azure Extension (Preview) is a C# WinRT/WinUI 3 extension for PowerToys Command Palette that integrates Azure DevOps functionality. The extension allows users to access saved queries, pull request searches, and pipeline searches directly from Command Palette.
 
+## System Requirements
+
+- Windows 11
+- PowerToys with Command Palette included (version 0.90.0 or above)
+- ARM64 or x64 processor
+- Visual Studio 2022 or later (for development)
+
 ## Build and Development Commands
 
 ### Building the Project
@@ -40,9 +47,24 @@ Build outputs are placed in `BuildOutput/` directory as `.msix` packages.
 
 ### Running Tests
 
-**Run all tests:**
+**Run via PowerShell script:**
 ```powershell
-# Via dotnet CLI (preferred for command line)
+# Run tests for x64 Debug (default)
+.\build\scripts\Test.ps1
+
+# Run tests for specific platform and configuration
+.\build\scripts\Test.ps1 -Platform x64 -Configuration Release
+.\build\scripts\Test.ps1 -Platform arm64 -Configuration Debug
+
+# View help
+.\build\scripts\Test.ps1 -Help
+```
+
+Note: The Test.ps1 script automatically excludes tests with `TestCategory="LiveData"` attribute to avoid tests that require actual Azure DevOps connections.
+
+**Run all tests via dotnet CLI:**
+```powershell
+# Via dotnet CLI (includes LiveData tests)
 dotnet test AzureExtension.sln
 
 # Run tests for specific platform
@@ -57,6 +79,9 @@ dotnet test --filter "FullyQualifiedName~AzureExtension.Test.Client.AzureUrlBuil
 
 # Run specific test method
 dotnet test --filter "FullyQualifiedName~AzureExtension.Test.Client.AzureUrlBuilderTests.TestMethod"
+
+# Exclude LiveData tests (same as Test.ps1)
+dotnet test --filter "TestCategory!=LiveData"
 ```
 
 **Via Visual Studio:**
@@ -233,6 +258,8 @@ Use `AzureUri` and `AzureUrlBuilder` classes for URL construction and parsing.
 - `TestContextSink` integrates Serilog with MSTest output
 - Tests run on both x64 and ARM64 platforms
 - Mock `IAzureLiveDataProvider` for unit tests to avoid real API calls
+- Use `[TestCategory("LiveData")]` attribute for tests that require actual Azure DevOps API calls
+- The `Test.ps1` script excludes LiveData tests by default to speed up CI builds
 
 ## Project Structure
 
