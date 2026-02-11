@@ -137,6 +137,7 @@ public sealed class Program
         using var persistentDataStore = new DataStore("PersistentDataStore", combinedPersistentDataStorePath, persistentDataStoreSchema);
 
         persistentDataStore.Create();
+        SeedDataLoader.SeedIfEmpty(persistentDataStore);
 
         var combinedCachePath = Path.Combine(dataStoreFolderPath, "AzureData.db");
         var cacheDataStoreSchema = new AzureCacheDataStoreSchema();

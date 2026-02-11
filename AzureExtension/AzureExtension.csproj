@@ -21,7 +21,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Content Include="Assets\*" />
+		<Content Include="Assets\*">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -61,6 +63,9 @@
 
     <ItemGroup>
         <Content Include="Controls\Templates\*">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="seed-data.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
         <Compile Remove="D:\azext\\codeAnalysis\GlobalSuppressions.cs" />

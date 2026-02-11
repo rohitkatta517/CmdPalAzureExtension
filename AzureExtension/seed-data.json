@@ -1,0 +1,23 @@
+{
+  "projectSettings": [
+    { "organizationUrl": "https://dev.azure.com/office", "projectName": "OC" }
+  ],
+  "queries": [],
+  "pullRequestSearches": [
+    { "url": "https://dev.azure.com/office/OC/_git/Lumos/pullrequests?_a=mine", "name": "Lumos - My PRs", "view": "Mine", "isTopLevel": false },
+    { "url": "https://dev.azure.com/office/OC/_git/Lumos/pullrequests?_a=active", "name": "Lumos - All Active", "view": "All", "isTopLevel": false },
+    { "url": "https://dev.azure.com/office/OC/_git/dime/pullrequests?_a=mine", "name": "Dime - My PRs", "view": "Mine", "isTopLevel": false },
+    { "url": "https://dev.azure.com/office/OC/_git/dime/pullrequests?_a=active", "name": "Dime - All Active", "view": "All", "isTopLevel": false }
+  ],
+  "pipelineSearches": [
+    { "name": "Dime", "internalId": 36577, "url": "https://office.visualstudio.com/OC/_build?definitionId=36577", "isTopLevel": false },
+    { "name": "Lumos", "internalId": 30766, "url": "https://office.visualstudio.com/OC/_build?definitionId=30766", "isTopLevel": false },
+    { "name": "Lumos Private Branch", "internalId": 34814, "url": "https://office.visualstudio.com/OC/_build?definitionId=34814", "isTopLevel": false },
+    { "name": "Lumos Synthetics", "internalId": 15495, "url": "https://office.visualstudio.com/OC/_build?definitionId=15495", "isTopLevel": false }
+  ],
+  "boardLinks": [
+    { "url": "https://office.visualstudio.com/OC/_boards/board/t/ExD%20Growth%20-%20Acquisition%20Shield%20NA/Backlog%20Items", "displayName": "Acquisition Shield Board" },
+    { "url": "https://office.visualstudio.com/OC/_boards/board/t/ExD%20Growth%20-%20Acquisition%20NA/Backlog%20Items", "displayName": "Acquisition Board" },
+    { "url": "https://office.visualstudio.com/OC/_boards/board/t/ExD%20Growth%20-%20Acquisition%20Experiences%20NA/Features", "displayName": "Acquisition Features" }
+  ]
+}
