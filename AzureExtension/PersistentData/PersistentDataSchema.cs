@@ -8,7 +8,7 @@ namespace AzureExtension.PersistentData;
 
 public sealed class PersistentDataSchema : IDataStoreSchema
 {
-    public long SchemaVersion => 5;
+    public long SchemaVersion => 6;
 
     public List<string> SchemaSqls => _schemaSqlsValue;
 
@@ -45,11 +45,19 @@ public sealed class PersistentDataSchema : IDataStoreSchema
             ProjectName TEXT NOT NULL
         )";
 
+    private const string BoardLink =
+        @"CREATE TABLE IF NOT EXISTS BoardLink (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Url TEXT NOT NULL,
+            DisplayName TEXT NOT NULL
+        )";
+
     private static readonly List<string> _schemaSqlsValue = new()
     {
         Query,
         PullRequestSearch,
         DefinitionSearch,
         ProjectSettings,
+        BoardLink,
     };
 }

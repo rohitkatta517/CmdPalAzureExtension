@@ -1,0 +1,27 @@
+// Copyright (c) Microsoft Corporation
+// The Microsoft Corporation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Diagnostics;
+using AzureExtension.Helpers;
+using Microsoft.CommandPalette.Extensions.Toolkit;
+
+namespace AzureExtension;
+
+internal sealed partial class BoardLinkCommand : InvokableCommand
+{
+    private readonly string _url;
+
+    internal BoardLinkCommand(string url)
+    {
+        Name = "Open Board";
+        Icon = IconLoader.GetIcon("OpenLink");
+        _url = url;
+    }
+
+    public override CommandResult Invoke()
+    {
+        Process.Start(new ProcessStartInfo(_url) { UseShellExecute = true });
+        return CommandResult.Dismiss();
+    }
+}

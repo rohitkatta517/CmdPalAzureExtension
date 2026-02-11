@@ -257,7 +257,13 @@ public sealed class Program
         var addProjectListItem = new AddProjectListItem(saveProjectSettingsPage);
         var savedProjectsPage = new SavedProjectsPage(addProjectListItem, savedAzureSearchesMediator, projectSettingsRepository);
 
-        using var commandProvider = new AzureExtensionCommandProvider(signInPage, signOutPage, accountProvider, savedQueriesPage, savedPullRequestSearchesPage, searchPageFactory, savedAzureSearchesMediator, authenticationMediator, savedPipelineSearchesPage, dataProvider, myWorkItemsManager, savedProjectsPage);
+        var boardLinkRepository = new BoardLinkRepository(persistentDataStore);
+        var saveBoardLinkForm = new SaveBoardLinkForm(null, boardLinkRepository, savedAzureSearchesMediator);
+        var saveBoardLinkPage = new SaveBoardLinkPage(saveBoardLinkForm);
+        var addBoardLinkListItem = new AddBoardLinkListItem(saveBoardLinkPage);
+        var savedBoardLinksPage = new SavedBoardLinksPage(addBoardLinkListItem, savedAzureSearchesMediator, boardLinkRepository);
+
+        using var commandProvider = new AzureExtensionCommandProvider(signInPage, signOutPage, accountProvider, savedQueriesPage, savedPullRequestSearchesPage, searchPageFactory, savedAzureSearchesMediator, authenticationMediator, savedPipelineSearchesPage, dataProvider, myWorkItemsManager, savedProjectsPage, boardLinkRepository, savedBoardLinksPage);
 
         var extensionInstance = new AzureExtension(extensionDisposedEvent, commandProvider);
 

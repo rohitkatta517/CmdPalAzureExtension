@@ -17,6 +17,7 @@ public static class TemplateHelper
             "SaveQuery" => "Controls\\Templates\\SaveQueryTemplate.json",
             "SavePipelineSearch" => "Controls\\Templates\\SavePipelineSearchTemplate.json",
             "SaveProjectSettings" => "Controls\\Templates\\SaveProjectSettingsTemplate.json",
+            "SaveBoardLink" => "Controls\\Templates\\SaveBoardLinkTemplate.json",
             _ => throw new NotImplementedException($"Template for page '{page}' is not implemented."),
         };
     }

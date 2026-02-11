@@ -19,6 +19,7 @@ public enum SearchUpdatedType
     Pipeline,
     MyWorkItems,
     ProjectSettings,
+    BoardLink,
 }
 
 public class SearchUpdatedEventArgs : EventArgs

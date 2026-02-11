@@ -8,8 +8,10 @@ using AzureExtension.Controls.Pages;
 using AzureExtension.DataManager;
 using AzureExtension.DataManager.Cache;
 using AzureExtension.Helpers;
+using AzureExtension.PersistentData;
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
+using Serilog;
 
 namespace AzureExtension;
 
@@ -27,6 +29,8 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
     private readonly ILiveDataProvider _liveDataProvider;
     private readonly AzureDataMyWorkItemsManager _myWorkItemsManager;
     private readonly SavedProjectsPage _savedProjectsPage;
+    private readonly BoardLinkRepository _boardLinkRepository;
+    private readonly SavedBoardLinksPage _savedBoardLinksPage;
 
     public AzureExtensionCommandProvider(
         SignInPage signInPage,
@@ -40,7 +44,9 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
         SavedPipelineSearchesPage savedPipelineSearchesPage,
         ILiveDataProvider liveDataProvider,
         AzureDataMyWorkItemsManager myWorkItemsManager,
-        SavedProjectsPage savedProjectsPage)
+        SavedProjectsPage savedProjectsPage,
+        BoardLinkRepository boardLinkRepository,
+        SavedBoardLinksPage savedBoardLinksPage)
     {
         _signInPage = signInPage;
         _signOutPage = signOutPage;
@@ -54,6 +60,8 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
         _liveDataProvider = liveDataProvider;
         _myWorkItemsManager = myWorkItemsManager;
         _savedProjectsPage = savedProjectsPage;
+        _boardLinkRepository = boardLinkRepository;
+        _savedBoardLinksPage = savedBoardLinksPage;
         _liveDataProvider.OnUpdate += OnLiveDataUpdate;
         DisplayName = "Azure Extension"; // hard-coded because it's a product title
 
@@ -102,9 +110,13 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
             var myWorkItemsCommands = GetMyWorkItemsCommands();
             topLevelCommands.AddRange(myWorkItemsCommands);
 
+            var boardLinkCommands = GetBoardLinkCommands();
+            topLevelCommands.AddRange(boardLinkCommands);
+
             var defaultCommands = new List<ListItem>
             {
                 new(_savedProjectsPage),
+                new(_savedBoardLinksPage),
                 new(_savedQueriesPage),
                 new(_savedPullRequestSearchesPage),
                 new(_savedPipelineSearchesPage),
@@ -124,6 +136,32 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
         foreach (var search in searches)
         {
             items.Add(_searchPageFactory.CreateItemForSearch(search));
+        }
+
+        return items;
+    }
+
+    private List<IListItem> GetBoardLinkCommands()
+    {
+        var items = new List<IListItem>();
+        try
+        {
+            var boardLinks = _boardLinkRepository.GetAll();
+            foreach (var link in boardLinks)
+            {
+                var item = new ListItem(new BoardLinkCommand(link.Url))
+                {
+                    Title = link.DisplayName,
+                    Subtitle = Controls.Forms.SaveBoardLinkForm.ExtractSubtitle(link.Url),
+                    Icon = IconLoader.GetIcon("OpenLink"),
+                };
+                items.Add(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.ForContext("SourceContext", nameof(AzureExtensionCommandProvider))
+                .Error(ex, "Failed to get board link commands.");
         }
 
         return items;
