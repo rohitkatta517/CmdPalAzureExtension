@@ -23,7 +23,7 @@ public partial class MyWorkItemsPage : SearchPage<IWorkItem>
     {
         _resources = resources;
         _timeSpanHelper = timeSpanHelper;
-        Icon = IconLoader.GetIcon("Query");
+        Icon = IconLoader.GetIcon("MyWorkItems");
         Title = search.Name;
         Name = Title;
         ShowDetails = true;
@@ -38,7 +38,7 @@ public partial class MyWorkItemsPage : SearchPage<IWorkItem>
         {
             Title = title,
             Icon = IconLoader.GetIcon(item.WorkItemTypeName),
-            Tags = new[] { GetStatusTag(item) },
+            Tags = new ITag[] { GetTypeTag(item), GetStatusTag(item) },
             MoreCommands = new CommandContextItem[]
             {
                 new(new CopyCommand(item.InternalId.ToStringInvariant(), _resources.GetResource("Pages_WorkItemsSearchPage_CopyWorkItemId"), _resources)),
@@ -78,14 +78,32 @@ public partial class MyWorkItemsPage : SearchPage<IWorkItem>
                     {
                         Data = new DetailsTags()
                         {
-                            Tags = new[]
+                            Tags = new ITag[]
                             {
+                                GetTypeTag(item),
                                 GetStatusTag(item),
                             },
                         },
                     },
                 },
             },
+        };
+    }
+
+    private static string GetTypeAbbreviation(string typeName) => typeName switch
+    {
+        "Product Backlog Item" => "PBI",
+        "User Story" => "Story",
+        "Change Request" => "CR",
+        _ => typeName,
+    };
+
+    private static Tag GetTypeTag(IWorkItem item)
+    {
+        return new Tag()
+        {
+            Text = GetTypeAbbreviation(item.WorkItemTypeName),
+            Icon = IconLoader.GetIcon(item.WorkItemTypeName),
         };
     }
 

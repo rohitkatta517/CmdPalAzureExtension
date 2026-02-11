@@ -25,7 +25,7 @@ public sealed partial class SignOutPage : ContentPage, IDisposable
         _signOutCommand = signOutCommand;
         _authenticationMediator = authenticationMediator;
         _authenticationMediator.LoadingStateChanged += OnLoadingStateChanged;
-        Icon = IconLoader.GetIcon("Logo");
+        Icon = IconLoader.GetIcon("SignOut");
         Title = _resources.GetResource("Pages_SignOut_Title");
         Name = Title; // Title is for the Page, Name is for the command
 

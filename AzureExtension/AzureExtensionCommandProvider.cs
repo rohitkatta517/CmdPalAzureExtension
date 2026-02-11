@@ -153,7 +153,7 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
                 {
                     Title = link.DisplayName,
                     Subtitle = Controls.Forms.SaveBoardLinkForm.ExtractSubtitle(link.Url),
-                    Icon = IconLoader.GetIcon("OpenLink"),
+                    Icon = IconLoader.GetIcon("Board"),
                 };
                 items.Add(item);
             }

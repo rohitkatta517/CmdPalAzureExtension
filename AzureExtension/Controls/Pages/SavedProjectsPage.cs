@@ -30,7 +30,7 @@ public partial class SavedProjectsPage : SavedSearchesPage
     {
         Title = "Saved Azure DevOps Projects";
         Name = Title;
-        Icon = IconLoader.GetIcon("QueryList");
+        Icon = IconLoader.GetIcon("Project");
         _addProjectListItem = addProjectListItem;
         _projectSettingsRepository = projectSettingsRepository;
         _savedSearchesMediator = mediator;

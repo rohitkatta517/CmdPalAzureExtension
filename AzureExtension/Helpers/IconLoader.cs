@@ -69,11 +69,22 @@ public class IconLoader
         _iconDictionary.Add("Search", new IconInfo("\uE721"));
         _iconDictionary.Add("OpenLink", new IconInfo("\uE8A7"));
         _iconDictionary.Add("Copy", new IconInfo("\uE8C8"));
+        _iconDictionary.Add("Project", new IconInfo("\uE8B7"));
+        _iconDictionary.Add("Board", new IconInfo("\uE8A1"));
+        _iconDictionary.Add("MyWorkItems", new IconInfo("\uE77B"));
+        _iconDictionary.Add("SignOut", new IconInfo("\uE7E8"));
     }
 
     public static IconInfo GetIcon(string key)
     {
         if (_iconDictionary.TryGetValue(key, out var iconInfo))
+        {
+            return iconInfo;
+        }
+
+        // Handle multi-word ADO type names (e.g., "Product Backlog Item" → "ProductBacklogItem")
+        var normalizedKey = key.Replace(" ", string.Empty);
+        if (_iconDictionary.TryGetValue(normalizedKey, out iconInfo))
         {
             return iconInfo;
         }

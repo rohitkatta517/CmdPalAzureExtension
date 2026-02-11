@@ -30,7 +30,7 @@ public partial class SavedBoardLinksPage : SavedSearchesPage
     {
         Title = "Saved Board Links";
         Name = Title;
-        Icon = IconLoader.GetIcon("OpenLink");
+        Icon = IconLoader.GetIcon("Board");
         _addBoardLinkListItem = addBoardLinkListItem;
         _boardLinkRepository = boardLinkRepository;
         _savedSearchesMediator = mediator;
