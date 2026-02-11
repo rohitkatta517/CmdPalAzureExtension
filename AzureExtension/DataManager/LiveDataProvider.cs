@@ -76,6 +76,7 @@ public class LiveDataProvider : ILiveDataProvider
     {
         return search switch
         {
+            IMyWorkItemsSearch => DataUpdateType.MyWorkItems,
             IQuerySearch => DataUpdateType.Query,
             IPullRequestSearch => DataUpdateType.PullRequests,
             IPipelineDefinitionSearch => DataUpdateType.Pipeline,

@@ -1,0 +1,43 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "size": "Medium",
+      "weight": "Bolder",
+      "text": "{{SaveProjectSettingsFormTitle}}",
+      "horizontalAlignment": "Center",
+      "wrap": true,
+      "style": "heading"
+    },
+    {
+      "type": "Input.Text",
+      "id": "OrganizationUrl",
+      "label": "{{OrganizationUrlLabel}}",
+      "isRequired": true,
+      "errorMessage": "{{OrganizationUrlErrorMessage}}",
+      "value": "{{OrganizationUrlValue}}",
+      "placeholder": "https://dev.azure.com/myorg"
+    },
+    {
+      "type": "Input.Text",
+      "id": "ProjectName",
+      "label": "{{ProjectNameLabel}}",
+      "isRequired": true,
+      "errorMessage": "{{ProjectNameErrorMessage}}",
+      "value": "{{ProjectNameValue}}",
+      "placeholder": "MyProject"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Submit",
+      "title": "{{SaveProjectSettingsActionTitle}}",
+      "data": {
+        "id": "SaveProjectSettingsAction"
+      }
+    }
+  ]
+}

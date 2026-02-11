@@ -10,6 +10,7 @@ public static class AzureSearchTypeHelper
     {
         return search switch
         {
+            IMyWorkItemsSearch => typeof(IMyWorkItemsSearch),
             IQuerySearch => typeof(IQuerySearch),
             IPullRequestSearch => typeof(IPullRequestSearch),
             IPipelineDefinitionSearch => typeof(IPipelineDefinitionSearch),
@@ -21,6 +22,7 @@ public static class AzureSearchTypeHelper
     {
         return search switch
         {
+            IMyWorkItemsSearch => typeof(IWorkItem),
             IQuerySearch => typeof(IWorkItem),
             IPullRequestSearch => typeof(IPullRequest),
             IPipelineDefinitionSearch => typeof(IBuild),
@@ -32,6 +34,7 @@ public static class AzureSearchTypeHelper
     {
         return search switch
         {
+            IMyWorkItemsSearch => typeof(IMyWorkItemsSearch),
             IQuerySearch => typeof(IQuerySearch),
             IPullRequestSearch => typeof(IPullRequestSearch),
             IPipelineDefinitionSearch => typeof(IDefinition),

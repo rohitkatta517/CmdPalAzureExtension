@@ -22,6 +22,7 @@ public class SearchPageFactory : ISearchPageFactory
     private readonly ISavedSearchesUpdater<IPullRequestSearch> _savedPullRequestSearchUpdater;
     private readonly ISavedSearchesUpdater<IPipelineDefinitionSearch> _definitionUpdater;
     private readonly ILiveContentDataProvider<IWorkItem> _workItemProvider;
+    private readonly ILiveContentDataProvider<IWorkItem> _myWorkItemProvider;
     private readonly ILiveContentDataProvider<IPullRequest> _pullRequestProvider;
     private readonly ILiveContentDataProvider<IBuild> _buildProvider;
     private readonly ILiveSearchDataProvider<IDefinition> _definitionProvider;
@@ -37,6 +38,7 @@ public class SearchPageFactory : ISearchPageFactory
         ISavedSearchesUpdater<IPullRequestSearch> savedPullRequestSearchUpdater,
         ISavedSearchesUpdater<IPipelineDefinitionSearch> definitionUpdater,
         ILiveContentDataProvider<IWorkItem> workItemProvider,
+        ILiveContentDataProvider<IWorkItem> myWorkItemProvider,
         ILiveContentDataProvider<IPullRequest> pullRequestProvider,
         ILiveContentDataProvider<IBuild> buildProvider,
         ILiveSearchDataProvider<IDefinition> definitionProvider,
@@ -53,6 +55,7 @@ public class SearchPageFactory : ISearchPageFactory
         _definitionUpdater = definitionUpdater;
         _azureSearchRepositories = azureSearchRepositories;
         _workItemProvider = workItemProvider;
+        _myWorkItemProvider = myWorkItemProvider;
         _pullRequestProvider = pullRequestProvider;
         _buildProvider = buildProvider;
         _definitionProvider = definitionProvider;
@@ -60,7 +63,11 @@ public class SearchPageFactory : ISearchPageFactory
 
     public ListPage CreatePageForSearch(IAzureSearch search)
     {
-        if (search is IQuerySearch)
+        if (search is IMyWorkItemsSearch myWorkItemsSearch)
+        {
+            return new MyWorkItemsPage(myWorkItemsSearch, _resources, _myWorkItemProvider, new TimeSpanHelper(_resources));
+        }
+        else if (search is IQuerySearch)
         {
             return new WorkItemsSearchPage((IQuerySearch)search, _resources, _workItemProvider, new TimeSpanHelper(_resources));
         }
@@ -104,6 +111,11 @@ public class SearchPageFactory : ISearchPageFactory
 
     public IListItem CreateItemForSearch(IAzureSearch search)
     {
+        if (search is IMyWorkItemsSearch myWorkItemsSearch)
+        {
+            return CreateItemForMyWorkItemsSearch(myWorkItemsSearch);
+        }
+
         if (search is IPipelineDefinitionSearch)
         {
             return CreateItemForDefinitionSearch((IPipelineDefinitionSearch)search);
@@ -140,6 +152,16 @@ public class SearchPageFactory : ISearchPageFactory
                     _azureClientHelpers,
                     _accountProvider)),
             },
+        };
+    }
+
+    private ListItem CreateItemForMyWorkItemsSearch(IMyWorkItemsSearch search)
+    {
+        return new ListItem(CreatePageForSearch(search))
+        {
+            Title = search.Name,
+            Subtitle = search.ProjectName,
+            Icon = IconLoader.GetIcon("Query"),
         };
     }
 

@@ -8,7 +8,7 @@ namespace AzureExtension.PersistentData;
 
 public sealed class PersistentDataSchema : IDataStoreSchema
 {
-    public long SchemaVersion => 4;
+    public long SchemaVersion => 5;
 
     public List<string> SchemaSqls => _schemaSqlsValue;
 
@@ -38,10 +38,18 @@ public sealed class PersistentDataSchema : IDataStoreSchema
             IsTopLevel INTEGER NOT NULL CHECK (IsTopLevel IN (0, 1))
         )";
 
+    private const string ProjectSettings =
+        @"CREATE TABLE IF NOT EXISTS ProjectSettings (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            OrganizationUrl TEXT NOT NULL,
+            ProjectName TEXT NOT NULL
+        )";
+
     private static readonly List<string> _schemaSqlsValue = new()
     {
         Query,
         PullRequestSearch,
         DefinitionSearch,
+        ProjectSettings,
     };
 }

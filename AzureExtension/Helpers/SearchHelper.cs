@@ -13,7 +13,11 @@ public static class SearchHelper
 {
     public static SearchUpdatedType GetSearchUpdatedType(IAzureSearch? search)
     {
-        if (search is IQuerySearch)
+        if (search is IMyWorkItemsSearch)
+        {
+            return SearchUpdatedType.MyWorkItems;
+        }
+        else if (search is IQuerySearch)
         {
             return SearchUpdatedType.Query;
         }
@@ -32,7 +36,11 @@ public static class SearchHelper
     public static InfoType GetSearchInfoType<TSearch>()
         where TSearch : IAzureSearch
     {
-        if (typeof(TSearch) == typeof(IQuerySearch))
+        if (typeof(TSearch) == typeof(IMyWorkItemsSearch))
+        {
+            return InfoType.Query;
+        }
+        else if (typeof(TSearch) == typeof(IQuerySearch))
         {
             return InfoType.Query;
         }
@@ -51,7 +59,11 @@ public static class SearchHelper
     public static SearchUpdatedType GetSearchUpdatedType<TSearch>()
     where TSearch : IAzureSearch
     {
-        if (typeof(TSearch) == typeof(IQuerySearch))
+        if (typeof(TSearch) == typeof(IMyWorkItemsSearch))
+        {
+            return SearchUpdatedType.MyWorkItems;
+        }
+        else if (typeof(TSearch) == typeof(IQuerySearch))
         {
             return SearchUpdatedType.Query;
         }
@@ -69,7 +81,11 @@ public static class SearchHelper
 
     public static InfoType GetInfoTypeFromSearch(IAzureSearch? search)
     {
-        if (search is IQuerySearch)
+        if (search is IMyWorkItemsSearch)
+        {
+            return InfoType.Query;
+        }
+        else if (search is IQuerySearch)
         {
             return InfoType.Query;
         }
@@ -87,7 +103,11 @@ public static class SearchHelper
 
     public static Type GetAzureSearchType(IAzureSearch search)
     {
-        if (search is IQuerySearch)
+        if (search is IMyWorkItemsSearch)
+        {
+            return typeof(IMyWorkItemsSearch);
+        }
+        else if (search is IQuerySearch)
         {
             return typeof(IQuerySearch);
         }

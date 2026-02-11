@@ -13,6 +13,7 @@ public enum DataUpdateType
     PullRequests,
     Pipeline,
     Repository,
+    MyWorkItems,
 }
 
 public class DataUpdateParameters

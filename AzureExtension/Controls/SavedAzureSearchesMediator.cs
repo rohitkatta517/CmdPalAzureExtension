@@ -28,6 +28,18 @@ public class SavedAzureSearchesMediator
         SearchUpdated?.Invoke(this, args);
     }
 
+    public void AddSearch(IAzureSearch? search, SearchUpdatedType searchType)
+    {
+        var args = new SearchUpdatedEventArgs(search, SearchUpdatedEventType.SearchAdded, searchType);
+        SearchUpdated?.Invoke(this, args);
+    }
+
+    public void RemoveSearch(IAzureSearch search, SearchUpdatedType searchType)
+    {
+        var args = new SearchUpdatedEventArgs(search, SearchUpdatedEventType.SearchRemoved, searchType);
+        SearchUpdated?.Invoke(this, args);
+    }
+
     public void SetLoadingState(bool isLoading, SearchUpdatedType searchType)
     {
         var args = new SearchSetLoadingStateArgs(isLoading, searchType);

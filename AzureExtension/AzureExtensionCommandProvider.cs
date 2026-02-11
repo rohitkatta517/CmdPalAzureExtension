@@ -25,6 +25,8 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
     private readonly AuthenticationMediator _authenticationMediator;
     private readonly SavedPipelineSearchesPage _savedPipelineSearchesPage;
     private readonly ILiveDataProvider _liveDataProvider;
+    private readonly AzureDataMyWorkItemsManager _myWorkItemsManager;
+    private readonly SavedProjectsPage _savedProjectsPage;
 
     public AzureExtensionCommandProvider(
         SignInPage signInPage,
@@ -36,7 +38,9 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
         SavedAzureSearchesMediator mediator,
         AuthenticationMediator authenticationMediator,
         SavedPipelineSearchesPage savedPipelineSearchesPage,
-        ILiveDataProvider liveDataProvider)
+        ILiveDataProvider liveDataProvider,
+        AzureDataMyWorkItemsManager myWorkItemsManager,
+        SavedProjectsPage savedProjectsPage)
     {
         _signInPage = signInPage;
         _signOutPage = signOutPage;
@@ -48,6 +52,8 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
         _authenticationMediator = authenticationMediator;
         _savedPipelineSearchesPage = savedPipelineSearchesPage;
         _liveDataProvider = liveDataProvider;
+        _myWorkItemsManager = myWorkItemsManager;
+        _savedProjectsPage = savedProjectsPage;
         _liveDataProvider.OnUpdate += OnLiveDataUpdate;
         DisplayName = "Azure Extension"; // hard-coded because it's a product title
 
@@ -92,8 +98,13 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
         else
         {
             var topLevelCommands = GetTopLevelSearches().GetAwaiter().GetResult();
+
+            var myWorkItemsCommands = GetMyWorkItemsCommands();
+            topLevelCommands.AddRange(myWorkItemsCommands);
+
             var defaultCommands = new List<ListItem>
             {
+                new(_savedProjectsPage),
                 new(_savedQueriesPage),
                 new(_savedPullRequestSearchesPage),
                 new(_savedPipelineSearchesPage),
@@ -104,6 +115,18 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
 
             return topLevelCommands.ToArray();
         }
+    }
+
+    private List<IListItem> GetMyWorkItemsCommands()
+    {
+        var searches = _myWorkItemsManager.DiscoverSearches();
+        var items = new List<IListItem>();
+        foreach (var search in searches)
+        {
+            items.Add(_searchPageFactory.CreateItemForSearch(search));
+        }
+
+        return items;
     }
 
     private async Task<List<IListItem>> GetTopLevelSearches()

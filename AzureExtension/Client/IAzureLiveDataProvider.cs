@@ -35,4 +35,6 @@ public interface IAzureLiveDataProvider
     Task<List<Build>> GetBuildsAsync(IVssConnection connection, string projectId, long definitionId, CancellationToken cancellationToken);
 
     Task<BuildDefinition> GetDefinitionAsync(IVssConnection connection, string projectId, long definitionId, CancellationToken cancellationToken);
+
+    Task<WorkItemQueryResult> QueryByWiqlAsync(IVssConnection connection, string projectId, string wiql, CancellationToken cancellationToken);
 }

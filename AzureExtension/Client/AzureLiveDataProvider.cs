@@ -93,4 +93,11 @@ public class AzureLiveDataProvider : IAzureLiveDataProvider
         var buildClient = connection.GetClient<BuildHttpClient>();
         return await buildClient.GetDefinitionAsync(projectId, (int)definitionId, cancellationToken: cancellationToken);
     }
+
+    public async Task<WorkItemQueryResult> QueryByWiqlAsync(IVssConnection connection, string projectId, string wiql, CancellationToken cancellationToken)
+    {
+        var witClient = connection.GetClient<WorkItemTrackingHttpClient>();
+        var wiqlQuery = new Wiql { Query = wiql };
+        return await witClient.QueryByWiqlAsync(wiqlQuery, projectId, cancellationToken: cancellationToken);
+    }
 }

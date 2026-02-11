@@ -148,17 +148,27 @@ public sealed class Program
         var queryRepository = new QueryRepository(persistentDataStore, azureValidator);
         var pullRequestSearchRepository = new PullRequestSearchRepository(persistentDataStore, azureValidator);
         var pipelineDefinitionRepository = new DefinitionSearchRepository(persistentDataStore, azureValidator);
+        var projectSettingsRepository = new ProjectSettingsRepository(persistentDataStore);
 
         var queryManager = new AzureDataQueryManager(cacheDataStore, accountProvider, azureLiveDataProvider, azureClientProvider, queryRepository);
         var pullRequestSearchManager = new AzureDataPullRequestSearchManager(cacheDataStore, accountProvider, azureLiveDataProvider, azureClientProvider, pullRequestSearchRepository);
 
         var pipelineUpdater = new AzureDataPipelineUpdater(cacheDataStore, accountProvider, azureLiveDataProvider, azureClientProvider, pipelineDefinitionRepository, pipelineProvider);
 
+        var querySearchRepoAdapter = new AzureSearchRepositoryAdapter<IQuerySearch>(queryRepository, queryRepository);
+        var pullRequestSearchRepoAdapter = new AzureSearchRepositoryAdapter<IPullRequestSearch>(pullRequestSearchRepository, pullRequestSearchRepository);
+        var pipelineSearchRepoAdapter = new AzureSearchRepositoryAdapter<IPipelineDefinitionSearch>(pipelineDefinitionRepository, pipelineDefinitionRepository);
+
+        var allSearchRepositories = new List<IAzureSearchRepository> { querySearchRepoAdapter, pullRequestSearchRepoAdapter, pipelineSearchRepoAdapter };
+
+        var myWorkItemsManager = new AzureDataMyWorkItemsManager(cacheDataStore, accountProvider, azureLiveDataProvider, azureClientProvider, allSearchRepositories, projectSettingsRepository);
+
         var updatersDictionary = new Dictionary<DataUpdateType, IDataUpdater>
         {
             { DataUpdateType.Query, queryManager },
             { DataUpdateType.PullRequests, pullRequestSearchManager },
             { DataUpdateType.Pipeline, pipelineUpdater },
+            { DataUpdateType.MyWorkItems, myWorkItemsManager },
         };
 
         var azureDataManager = new AzureDataManager(cacheDataStore, updatersDictionary);
@@ -170,6 +180,7 @@ public sealed class Program
             { typeof(IQuerySearch), queryManager },
             { typeof(IPullRequestSearch), pullRequestSearchManager },
             { typeof(IPipelineDefinitionSearch), pipelineProvider },
+            { typeof(IMyWorkItemsSearch), myWorkItemsManager },
         };
 
         var searchDataProvidersDictionary = new Dictionary<Type, ISearchDataProvider>
@@ -177,6 +188,7 @@ public sealed class Program
             { typeof(IQuerySearch), queryManager },
             { typeof(IPullRequestSearch), pullRequestSearchManager },
             { typeof(IPipelineDefinitionSearch), pipelineProvider },
+            { typeof(IMyWorkItemsSearch), myWorkItemsManager },
         };
 
         var dataProvider = new LiveDataProvider(cacheManager, contentProvidersDictionary, searchDataProvidersDictionary);
@@ -198,9 +210,9 @@ public sealed class Program
 
         var azureSearchRepositories = new Dictionary<Type, IAzureSearchRepository>
         {
-            { typeof(IQuerySearch), new AzureSearchRepositoryAdapter<IQuerySearch>(queryRepository, queryRepository) },
-            { typeof(IPullRequestSearch), new AzureSearchRepositoryAdapter<IPullRequestSearch>(pullRequestSearchRepository, pullRequestSearchRepository) },
-            { typeof(IPipelineDefinitionSearch), new AzureSearchRepositoryAdapter<IPipelineDefinitionSearch>(pipelineDefinitionRepository, pipelineDefinitionRepository) },
+            { typeof(IQuerySearch), querySearchRepoAdapter },
+            { typeof(IPullRequestSearch), pullRequestSearchRepoAdapter },
+            { typeof(IPipelineDefinitionSearch), pipelineSearchRepoAdapter },
         };
 
         // passing null for SavedSearch because there is no standard TSearch type
@@ -217,6 +229,7 @@ public sealed class Program
             queryRepository,
             pullRequestSearchRepository,
             pipelineDefinitionRepository,
+            new ContentDataProviderAdapter<IWorkItem>(dataProvider),
             new ContentDataProviderAdapter<IWorkItem>(dataProvider),
             new ContentDataProviderAdapter<IPullRequest>(dataProvider),
             new ContentDataProviderAdapter<IBuild>(dataProvider),
@@ -239,7 +252,12 @@ public sealed class Program
         var addPipelineSearchListItem = new AddPipelineSearchListItem(savePipelineSearchPage, resources);
         using var savedPipelineSearchesPage = new SavedPipelineSearchesPage(resources, addPipelineSearchListItem, savedAzureSearchesMediator, pipelineDefinitionRepository, accountProvider, new ContentDataProviderAdapter<IBuild>(dataProvider), searchPageFactory);
 
-        using var commandProvider = new AzureExtensionCommandProvider(signInPage, signOutPage, accountProvider, savedQueriesPage, savedPullRequestSearchesPage, searchPageFactory, savedAzureSearchesMediator, authenticationMediator, savedPipelineSearchesPage, dataProvider);
+        var saveProjectSettingsForm = new SaveProjectSettingsForm(null, projectSettingsRepository, savedAzureSearchesMediator);
+        var saveProjectSettingsPage = new SaveProjectSettingsPage(saveProjectSettingsForm);
+        var addProjectListItem = new AddProjectListItem(saveProjectSettingsPage);
+        var savedProjectsPage = new SavedProjectsPage(addProjectListItem, savedAzureSearchesMediator, projectSettingsRepository);
+
+        using var commandProvider = new AzureExtensionCommandProvider(signInPage, signOutPage, accountProvider, savedQueriesPage, savedPullRequestSearchesPage, searchPageFactory, savedAzureSearchesMediator, authenticationMediator, savedPipelineSearchesPage, dataProvider, myWorkItemsManager, savedProjectsPage);
 
         var extensionInstance = new AzureExtension(extensionDisposedEvent, commandProvider);
 

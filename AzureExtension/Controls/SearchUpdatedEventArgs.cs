@@ -17,6 +17,8 @@ public enum SearchUpdatedType
     Query,
     PullRequest,
     Pipeline,
+    MyWorkItems,
+    ProjectSettings,
 }
 
 public class SearchUpdatedEventArgs : EventArgs
