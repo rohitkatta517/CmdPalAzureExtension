@@ -17,6 +17,8 @@ namespace AzureExtension.DataManager;
 public class AzureDataPullRequestSearchManager
     : ISearchDataProvider<IPullRequestSearch, PullRequestSearch>, IContentDataProvider<IPullRequestSearch, PullRequest>, IDataUpdater, IContentDataProvider, ISearchDataProvider
 {
+    private static readonly SemaphoreSlim _apiThrottle = new(5, 5);
+
     private readonly TimeSpan _pullRequestSearchDeletionTime = TimeSpan.FromMinutes(2);
 
     private readonly ILogger _log;
@@ -155,32 +157,40 @@ public class AzureDataPullRequestSearchManager
                 // Documentation: https://learn.microsoft.com/en-us/dotnet/api/microsoft.teamfoundation.policy.webapi.policyevaluationrecord.artifactid
                 var artifactId = $"vstfs:///CodeReview/CodeReviewId/{project.InternalId}/{pullRequest.PullRequestId}";
 
-                var policyEvaluationsTask = _liveDataProvider.GetPolicyEvaluationsAsync(vssConnection, project.InternalId, artifactId, cancellationToken);
-                Task<GitCommit>? commitTask = null;
-                if (pullRequest.LastMergeSourceCommit is not null)
-                {
-                    commitTask = _liveDataProvider.GetCommitAsync(vssConnection, pullRequest.LastMergeSourceCommit.CommitId, gitRepository.Id, cancellationToken);
-                }
-
+                await _apiThrottle.WaitAsync(cancellationToken);
                 try
                 {
-                    var policyEvaluations = await Task.WhenAny(policyEvaluationsTask, Task.Delay(TimeSpan.FromSeconds(5))) == policyEvaluationsTask
-                                           ? await policyEvaluationsTask
-                                           : throw new TimeoutException("Fetching policy evaluations timed out.");
-                    GetPolicyStatus(policyEvaluations, out status, out statusReason);
-                }
-                catch (Exception ex)
-                {
-                    _log.Error(ex, $"Failed getting policy evaluations for pull request: {pullRequest.PullRequestId} {pullRequest.Url}");
-                }
-
-                if (pullRequest.LastMergeSourceCommit is not null)
-                {
-                    var commitRef = await commitTask!;
-                    if (commitRef is not null)
+                    var policyEvaluationsTask = _liveDataProvider.GetPolicyEvaluationsAsync(vssConnection, project.InternalId, artifactId, cancellationToken);
+                    Task<GitCommit>? commitTask = null;
+                    if (pullRequest.LastMergeSourceCommit is not null)
                     {
-                        pullRequest.LastMergeSourceCommit = commitRef;
+                        commitTask = _liveDataProvider.GetCommitAsync(vssConnection, pullRequest.LastMergeSourceCommit.CommitId, gitRepository.Id, cancellationToken);
                     }
+
+                    try
+                    {
+                        var policyEvaluations = await Task.WhenAny(policyEvaluationsTask, Task.Delay(TimeSpan.FromSeconds(5))) == policyEvaluationsTask
+                                               ? await policyEvaluationsTask
+                                               : throw new TimeoutException("Fetching policy evaluations timed out.");
+                        GetPolicyStatus(policyEvaluations, out status, out statusReason);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error(ex, $"Failed getting policy evaluations for pull request: {pullRequest.PullRequestId} {pullRequest.Url}");
+                    }
+
+                    if (pullRequest.LastMergeSourceCommit is not null)
+                    {
+                        var commitRef = await commitTask!;
+                        if (commitRef is not null)
+                        {
+                            pullRequest.LastMergeSourceCommit = commitRef;
+                        }
+                    }
+                }
+                finally
+                {
+                    _apiThrottle.Release();
                 }
 
                 await dbSemaphore.WaitAsync(cancellationToken);

@@ -170,7 +170,7 @@ public sealed class CacheManager : IDisposable, ICacheManager
     {
         if (OnUpdate != null)
         {
-            _logger.Debug($"Sending update event. Kind: {kind}.");
+            _logger.Information($"Sending update event. Kind: {kind}.");
             OnUpdate.Invoke(source, new CacheManagerUpdateEventArgs(kind, dataUpdateParameters, ex));
         }
     }

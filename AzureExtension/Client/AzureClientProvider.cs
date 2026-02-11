@@ -102,7 +102,7 @@ public class AzureClientProvider : IConnectionProvider, IDisposable
 
             if (connection != null)
             {
-                _log.Debug($"Created new connection to {azureUri.Connection} for {account.Username}");
+                _log.Information($"Created new connection to {azureUri.Connection} for {account.Username}");
                 return new ConnectionResult(azureUri.Connection, null, connection);
             }
             else

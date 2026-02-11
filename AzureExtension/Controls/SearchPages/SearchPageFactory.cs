@@ -27,6 +27,7 @@ public class SearchPageFactory : ISearchPageFactory
     private readonly ILiveContentDataProvider<IBuild> _buildProvider;
     private readonly ILiveSearchDataProvider<IDefinition> _definitionProvider;
     private readonly IDictionary<Type, IAzureSearchRepository> _azureSearchRepositories;
+    private readonly TimeSpanHelper _timeSpanHelper;
 
     public SearchPageFactory(
         IResources resources,
@@ -44,7 +45,8 @@ public class SearchPageFactory : ISearchPageFactory
         ILiveSearchDataProvider<IDefinition> definitionProvider,
         SaveSearchCommand<IQuerySearch> saveQuerySearchCommand,
         SaveSearchCommand<IPullRequestSearch> savePullRequestSearchCommand,
-        SaveSearchCommand<IPipelineDefinitionSearch> savePipelineSearchCommand)
+        SaveSearchCommand<IPipelineDefinitionSearch> savePipelineSearchCommand,
+        TimeSpanHelper timeSpanHelper)
     {
         _resources = resources;
         _mediator = mediator;
@@ -59,25 +61,26 @@ public class SearchPageFactory : ISearchPageFactory
         _pullRequestProvider = pullRequestProvider;
         _buildProvider = buildProvider;
         _definitionProvider = definitionProvider;
+        _timeSpanHelper = timeSpanHelper;
     }
 
     public ListPage CreatePageForSearch(IAzureSearch search)
     {
         if (search is IMyWorkItemsSearch myWorkItemsSearch)
         {
-            return new MyWorkItemsPage(myWorkItemsSearch, _resources, _myWorkItemProvider, new TimeSpanHelper(_resources));
+            return new MyWorkItemsPage(myWorkItemsSearch, _resources, _myWorkItemProvider, _timeSpanHelper);
         }
         else if (search is IQuerySearch)
         {
-            return new WorkItemsSearchPage((IQuerySearch)search, _resources, _workItemProvider, new TimeSpanHelper(_resources));
+            return new WorkItemsSearchPage((IQuerySearch)search, _resources, _workItemProvider, _timeSpanHelper);
         }
         else if (search is IPullRequestSearch)
         {
-            return new PullRequestSearchPage((IPullRequestSearch)search, _resources, _pullRequestProvider, new TimeSpanHelper(_resources));
+            return new PullRequestSearchPage((IPullRequestSearch)search, _resources, _pullRequestProvider, _timeSpanHelper);
         }
         else if (search is IPipelineDefinitionSearch)
         {
-            return new BuildSearchPage((IPipelineDefinitionSearch)search, _resources, _buildProvider, _definitionProvider, new TimeSpanHelper(_resources));
+            return new BuildSearchPage((IPipelineDefinitionSearch)search, _resources, _buildProvider, _definitionProvider, _timeSpanHelper);
         }
 
         throw new NotImplementedException($"No page for search type {search.GetType()}");
@@ -168,7 +171,7 @@ public class SearchPageFactory : ISearchPageFactory
     public IListItem CreateItemForDefinitionSearch(IPipelineDefinitionSearch search)
     {
         var definition = _definitionProvider.GetSearchData(search).Result;
-        var timeSpanHelper = new TimeSpanHelper(_resources);
+        var timeSpanHelper = _timeSpanHelper;
 
         var azureSearchRepository = _azureSearchRepositories[typeof(IPipelineDefinitionSearch)];
 

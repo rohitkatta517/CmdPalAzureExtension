@@ -236,7 +236,8 @@ public sealed class Program
             new SearchDataProviderAdapter<IDefinition>(dataProvider),
             saveQuerySearchCommand,
             savePullRequestSearchCommand,
-            savePipelineSearchCommand);
+            savePipelineSearchCommand,
+            timeSpanHelper);
 
         var addQueryForm = new SaveQueryForm(null, resources, savedAzureSearchesMediator, accountProvider, azureClientHelpers, queryRepository, saveQuerySearchCommand);
         var addQueryListItem = new AddQueryListItem(new SaveQueryPage(addQueryForm, resources, savedAzureSearchesMediator), resources);

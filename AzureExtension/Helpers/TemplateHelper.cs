@@ -2,12 +2,15 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace AzureExtension.Helpers;
 
 public static class TemplateHelper
 {
+    private static readonly ConcurrentDictionary<string, string> _rawTemplateCache = new();
+
     public static string GetTemplatePath(string page)
     {
         return page switch
@@ -24,15 +27,13 @@ public static class TemplateHelper
 
     public static string LoadTemplateJsonFromTemplateName(string templateName, Dictionary<string, string> substitutions)
     {
-        var path = Path.Combine(AppContext.BaseDirectory, GetTemplatePath(templateName));
-        var template = File.ReadAllText(path, Encoding.Default) ?? throw new FileNotFoundException(path);
-
-        if (substitutions.Count > 0)
+        var rawTemplate = _rawTemplateCache.GetOrAdd(templateName, name =>
         {
-            template = FillInTemplate(template, substitutions);
-        }
+            var path = Path.Combine(AppContext.BaseDirectory, GetTemplatePath(name));
+            return File.ReadAllText(path, Encoding.Default) ?? throw new FileNotFoundException(path);
+        });
 
-        return template;
+        return substitutions.Count > 0 ? FillInTemplate(rawTemplate, substitutions) : rawTemplate;
     }
 
     public static string FillInTemplate(string jsonTemplate, Dictionary<string, string> substitutions)
