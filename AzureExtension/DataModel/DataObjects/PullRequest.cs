@@ -45,6 +45,18 @@ public class PullRequest : IPullRequest
 
     public string HtmlUrl { get; set; } = string.Empty;
 
+    public long ApprovedCount { get; set; }
+
+    public long RejectCount { get; set; }
+
+    public long WaitForAuthorCount { get; set; }
+
+    public long ReviewerCount { get; set; }
+
+    public long ActiveCommentCount { get; set; } = -1;
+
+    public long IsDraft { get; set; }
+
     [Write(false)]
     private DataStore? DataStore { get; set; }
 
@@ -70,8 +82,10 @@ public class PullRequest : IPullRequest
         long repositoryId,
         long creatorId,
         PolicyStatus status,
-        string statusReason)
+        string statusReason,
+        long activeCommentCount = -1)
     {
+        var reviewerList = gitPullRequest.Reviewers?.ToList() ?? [];
         var pullRequest = new PullRequest
         {
             InternalId = gitPullRequest.PullRequestId,
@@ -83,6 +97,12 @@ public class PullRequest : IPullRequest
             PolicyStatusReason = statusReason,
             TargetBranch = gitPullRequest.TargetRefName,
             CreationDate = gitPullRequest.CreationDate.Ticks,
+            ApprovedCount = reviewerList.Count(r => r.Vote >= 5),
+            RejectCount = reviewerList.Count(r => r.Vote == -10),
+            WaitForAuthorCount = reviewerList.Count(r => r.Vote == -5),
+            ReviewerCount = reviewerList.Count,
+            ActiveCommentCount = activeCommentCount,
+            IsDraft = gitPullRequest.IsDraft == true ? 1 : 0,
         };
 
         var repository = Repository.Get(dataStore, repositoryId);
@@ -160,10 +180,42 @@ public class PullRequest : IPullRequest
         long repositoryId,
         long creatorId,
         PolicyStatus status,
-        string statusReason)
+        string statusReason,
+        long activeCommentCount = -1)
     {
-        var pullRequest = Create(dataStore, gitPullRequest, repositoryId, creatorId, status, statusReason);
+        var pullRequest = Create(dataStore, gitPullRequest, repositoryId, creatorId, status, statusReason, activeCommentCount);
         return AddOrUpdate(dataStore, pullRequest);
+    }
+
+    /// <summary>
+    /// Retrieves all pull requests across all cached per-repo searches matching a given view and username.
+    /// Used by combined (aggregate) searches to show PRs from all configured repos in a single view.
+    /// </summary>
+    /// <param name="dataStore">The data store instance.</param>
+    /// <param name="username">The username to filter searches by.</param>
+    /// <param name="view">The pull request view type (Mine, All, Assigned).</param>
+    /// <returns>An enumerable collection of pull requests from all matching cached searches.</returns>
+    public static IEnumerable<PullRequest> GetForView(DataStore dataStore, string username, PullRequestView view)
+    {
+        var sql = @"SELECT DISTINCT PR.* FROM PullRequest PR
+                    INNER JOIN PullRequestSearchPullRequest PRSP ON PR.Id = PRSP.PullRequest
+                    INNER JOIN PullRequestSearch PRS ON PRSP.PullRequestSearch = PRS.Id
+                    WHERE PRS.ViewId = @ViewId AND PRS.Username = @Username
+                    ORDER BY PR.CreationDate DESC";
+        var param = new
+        {
+            ViewId = (long)view,
+            Username = username,
+        };
+
+        _log.Debug(DataStore.GetSqlLogMessage(sql, param));
+        var pullRequests = dataStore.Connection!.Query<PullRequest>(sql, param, null);
+        foreach (var pullRequest in pullRequests)
+        {
+            pullRequest.DataStore = dataStore;
+        }
+
+        return pullRequests;
     }
 
     /// <summary>

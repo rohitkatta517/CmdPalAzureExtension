@@ -17,7 +17,7 @@ public class AzureCacheDataStoreSchema : IDataStoreSchema
     }
 
     // Update this anytime incompatible changes happen with a released version.
-    private const long SchemaVersionValue = 0x0010;
+    private const long SchemaVersionValue = 0x0011;
 
     private const string Metadata =
     @"CREATE TABLE Metadata (" +
@@ -194,7 +194,13 @@ public class AzureCacheDataStoreSchema : IDataStoreSchema
         "PolicyStatusReason TEXT NOT NULL COLLATE NOCASE," +
         "TargetBranch TEXT NOT NULL COLLATE NOCASE," +
         "CreationDate INTEGER NOT NULL," +
-        "HtmlUrl TEXT NOT NULL COLLATE NOCASE" +
+        "HtmlUrl TEXT NOT NULL COLLATE NOCASE," +
+        "ApprovedCount INTEGER NOT NULL DEFAULT 0," +
+        "RejectCount INTEGER NOT NULL DEFAULT 0," +
+        "WaitForAuthorCount INTEGER NOT NULL DEFAULT 0," +
+        "ReviewerCount INTEGER NOT NULL DEFAULT 0," +
+        "ActiveCommentCount INTEGER NOT NULL DEFAULT -1," +
+        "IsDraft INTEGER NOT NULL DEFAULT 0" +
     ");" +
     "CREATE INDEX IDX_PullRequest_CreationDate ON PullRequest (CreationDate DESC);";
 

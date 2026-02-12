@@ -509,6 +509,18 @@
     <value>None provided</value>
     <comment>This replaces the pull request's "Policy Status Reason" detail value when none was provided from ADO</comment>
   </data>
+  <data name="Pages_PullRequestSearchPage_Reviewers" xml:space="preserve">
+    <value>Reviewers</value>
+    <comment>Label for the pull request's reviewer breakdown detail</comment>
+  </data>
+  <data name="Pages_PullRequestSearchPage_Comments" xml:space="preserve">
+    <value>Comments</value>
+    <comment>Label for the pull request's active comment count detail</comment>
+  </data>
+  <data name="Pages_PullRequestSearchPage_Draft" xml:space="preserve">
+    <value>Draft</value>
+    <comment>Tag text shown for draft pull requests</comment>
+  </data>
   <data name="Forms_Save_PipelineSearch" xml:space="preserve">
     <value>Save pipeline</value>
     <comment>The title for the form to save a pipeline search</comment>

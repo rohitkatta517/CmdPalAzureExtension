@@ -100,4 +100,10 @@ public class AzureLiveDataProvider : IAzureLiveDataProvider
         var wiqlQuery = new Wiql { Query = wiql };
         return await witClient.QueryByWiqlAsync(wiqlQuery, projectId, cancellationToken: cancellationToken);
     }
+
+    public async Task<List<GitPullRequestCommentThread>> GetPullRequestThreadsAsync(IVssConnection connection, Guid repositoryId, int pullRequestId, CancellationToken cancellationToken)
+    {
+        var gitClient = connection.GetClient<GitHttpClient>();
+        return await gitClient.GetThreadsAsync(repositoryId, pullRequestId, cancellationToken: cancellationToken);
+    }
 }

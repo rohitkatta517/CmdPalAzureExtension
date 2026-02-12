@@ -31,4 +31,16 @@ public interface IPullRequest
     string HtmlUrl { get; set; }
 
     string RepositoryGuid { get; }
+
+    long ApprovedCount { get; set; }
+
+    long RejectCount { get; set; }
+
+    long WaitForAuthorCount { get; set; }
+
+    long ReviewerCount { get; set; }
+
+    long ActiveCommentCount { get; set; }
+
+    long IsDraft { get; set; }
 }

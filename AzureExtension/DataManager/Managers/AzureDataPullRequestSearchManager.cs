@@ -51,6 +51,12 @@ public class AzureDataPullRequestSearchManager
         }
     }
 
+    private static bool IsCombinedSearch(IPullRequestSearch pullRequestSearch)
+    {
+        var azureUri = new AzureUri(pullRequestSearch.Url);
+        return string.IsNullOrEmpty(azureUri.Repository);
+    }
+
     public PullRequestSearch? GetDataForSearch(IPullRequestSearch pullRequestSearch)
     {
         ValidateDataStore();
@@ -68,6 +74,13 @@ public class AzureDataPullRequestSearchManager
     public IEnumerable<PullRequest> GetDataObjects(IPullRequestSearch pullRequestSearch)
     {
         ValidateDataStore();
+
+        if (IsCombinedSearch(pullRequestSearch))
+        {
+            var account = _accountProvider.GetDefaultAccount();
+            return PullRequest.GetForView(_dataStore, account.Username, GetPullRequestView(pullRequestSearch.View));
+        }
+
         var dsPullRequestSearch = GetDataForSearch(pullRequestSearch);
         return dsPullRequestSearch != null ? PullRequest.GetForPullRequestSearch(_dataStore, dsPullRequestSearch!) : [];
     }
@@ -84,6 +97,15 @@ public class AzureDataPullRequestSearchManager
 
     public bool IsNewOrStale(IPullRequestSearch pullRequestSearch, TimeSpan refreshCooldown)
     {
+        if (IsCombinedSearch(pullRequestSearch))
+        {
+            // Combined is stale if ANY underlying per-repo search of the same view is stale or missing.
+            var view = GetPullRequestView(pullRequestSearch.View);
+            var perRepoSearches = _pullRequestSearchRepository.GetSavedSearches()
+                .Where(s => !IsCombinedSearch(s) && GetPullRequestView(s.View) == view);
+            return perRepoSearches.Any(s => IsNewOrStale(s, refreshCooldown));
+        }
+
         var dsPullRequestSearch = GetDataForSearch(pullRequestSearch);
         return dsPullRequestSearch == null || DateTime.UtcNow - dsPullRequestSearch.UpdatedAt > refreshCooldown;
     }
@@ -157,10 +179,13 @@ public class AzureDataPullRequestSearchManager
                 // Documentation: https://learn.microsoft.com/en-us/dotnet/api/microsoft.teamfoundation.policy.webapi.policyevaluationrecord.artifactid
                 var artifactId = $"vstfs:///CodeReview/CodeReviewId/{project.InternalId}/{pullRequest.PullRequestId}";
 
+                long activeCommentCount = -1;
+
                 await _apiThrottle.WaitAsync(cancellationToken);
                 try
                 {
                     var policyEvaluationsTask = _liveDataProvider.GetPolicyEvaluationsAsync(vssConnection, project.InternalId, artifactId, cancellationToken);
+                    var threadsTask = _liveDataProvider.GetPullRequestThreadsAsync(vssConnection, gitRepository.Id, pullRequest.PullRequestId, cancellationToken);
                     Task<GitCommit>? commitTask = null;
                     if (pullRequest.LastMergeSourceCommit is not null)
                     {
@@ -177,6 +202,19 @@ public class AzureDataPullRequestSearchManager
                     catch (Exception ex)
                     {
                         _log.Error(ex, $"Failed getting policy evaluations for pull request: {pullRequest.PullRequestId} {pullRequest.Url}");
+                    }
+
+                    try
+                    {
+                        var threads = await Task.WhenAny(threadsTask, Task.Delay(TimeSpan.FromSeconds(5))) == threadsTask
+                                     ? await threadsTask
+                                     : throw new TimeoutException("Fetching comment threads timed out.");
+                        activeCommentCount = threads.Count(t =>
+                            t.Status == CommentThreadStatus.Active || t.Status == CommentThreadStatus.Pending);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error(ex, $"Failed getting comment threads for pull request: {pullRequest.PullRequestId} {pullRequest.Url}");
                     }
 
                     if (pullRequest.LastMergeSourceCommit is not null)
@@ -197,7 +235,7 @@ public class AzureDataPullRequestSearchManager
                 try
                 {
                     var creator = Identity.GetOrCreateIdentity(_dataStore, pullRequest.CreatedBy, vssConnection, _liveDataProvider);
-                    var dsPullRequest = PullRequest.GetOrCreate(_dataStore, pullRequest, repository.Id, creator.Id, status, statusReason);
+                    var dsPullRequest = PullRequest.GetOrCreate(_dataStore, pullRequest, repository.Id, creator.Id, status, statusReason, activeCommentCount);
                     return dsPullRequest;
                 }
                 finally
@@ -287,12 +325,34 @@ public class AzureDataPullRequestSearchManager
             var pullRequestSearches = _pullRequestSearchRepository.GetSavedSearches();
             foreach (var pullRequestSearch in pullRequestSearches)
             {
+                // Skip combined searches — their data comes from per-repo searches.
+                if (IsCombinedSearch(pullRequestSearch))
+                {
+                    continue;
+                }
+
                 await UpdatePullRequestsAsync(pullRequestSearch, parameters.CancellationToken.GetValueOrDefault());
             }
 
             return;
         }
 
-        await UpdatePullRequestsAsync((parameters.UpdateObject as IPullRequestSearch)!, parameters.CancellationToken.GetValueOrDefault());
+        var search = (parameters.UpdateObject as IPullRequestSearch)!;
+
+        if (IsCombinedSearch(search))
+        {
+            // Refresh all per-repo searches matching this view.
+            var view = GetPullRequestView(search.View);
+            var perRepoSearches = _pullRequestSearchRepository.GetSavedSearches()
+                .Where(s => !IsCombinedSearch(s) && GetPullRequestView(s.View) == view);
+            foreach (var perRepoSearch in perRepoSearches)
+            {
+                await UpdatePullRequestsAsync(perRepoSearch, parameters.CancellationToken.GetValueOrDefault());
+            }
+
+            return;
+        }
+
+        await UpdatePullRequestsAsync(search, parameters.CancellationToken.GetValueOrDefault());
     }
 }
