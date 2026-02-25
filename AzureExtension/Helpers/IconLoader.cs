@@ -73,6 +73,9 @@ public class IconLoader
         _iconDictionary.Add("Board", new IconInfo("\uE8A1"));
         _iconDictionary.Add("MyWorkItems", new IconInfo("\uE77B"));
         _iconDictionary.Add("SignOut", new IconInfo("\uE7E8"));
+        _iconDictionary.Add("QueryGlyph", new IconInfo("\uE71C"));
+        _iconDictionary.Add("PullRequestGlyph", new IconInfo("\uE895"));
+        _iconDictionary.Add("PipelineGlyph", new IconInfo("\uE90F"));
     }
 
     public static IconInfo GetIcon(string key)

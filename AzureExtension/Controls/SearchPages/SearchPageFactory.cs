@@ -140,7 +140,7 @@ public class SearchPageFactory : ISearchPageFactory
         {
             Title = search.Name,
             Subtitle = search.Url,
-            Icon = search is IQuerySearch ? IconLoader.GetIcon("Query") : IconLoader.GetIcon("PullRequest"),
+            Icon = search is IQuerySearch ? IconLoader.GetIcon("QueryGlyph") : IconLoader.GetIcon("PullRequestGlyph"),
             MoreCommands = new CommandContextItem[]
             {
                 new(new LinkCommand(search.Url, _resources, null)),
@@ -164,7 +164,7 @@ public class SearchPageFactory : ISearchPageFactory
         {
             Title = search.Name,
             Subtitle = search.ProjectName,
-            Icon = IconLoader.GetIcon("Query"),
+            Icon = IconLoader.GetIcon("MyWorkItems"),
         };
     }
 
@@ -179,6 +179,7 @@ public class SearchPageFactory : ISearchPageFactory
         {
             return new ListItem(CreatePageForSearch(search))
             {
+                Icon = IconLoader.GetIcon("PipelineGlyph"),
                 MoreCommands = new CommandContextItem[]
                 {
                     new(new LinkCommand(definition.HtmlUrl, _resources, _resources.GetResource("Pages_PipelineSearch_LinkCommandName"))),
@@ -221,7 +222,7 @@ public class SearchPageFactory : ISearchPageFactory
             return new ListItem(CreatePageForSearch(search))
             {
                 Title = definition.Name,
-                Icon = IconLoader.GetIcon("Pipeline"),
+                Icon = IconLoader.GetIcon("PipelineGlyph"),
                 MoreCommands = new CommandContextItem[]
                 {
                     new(new LinkCommand(definition.HtmlUrl, _resources, _resources.GetResource("Pages_PipelineSearch_LinkCommandName"))),

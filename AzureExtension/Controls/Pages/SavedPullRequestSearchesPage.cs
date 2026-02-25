@@ -30,7 +30,7 @@ public class SavedPullRequestSearchesPage : SavedSearchesPage
         _resources = resources;
         Title = _resources.GetResource("Pages_SavedPullRequestSearches_Title");
         Name = Title; // Title is for the Page, Name is for the command
-        Icon = IconLoader.GetIcon("PullRequest");
+        Icon = IconLoader.GetIcon("PullRequestGlyph");
         _pullRequestSearchRepository = pullRequestSearchRepository;
         _addPullRequestSearchListItem = addPullRequestSearchListItem;
         _searchPageFactory = searchPageFactory;

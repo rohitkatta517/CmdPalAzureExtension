@@ -31,7 +31,7 @@ public partial class SavedQueriesPage : SavedSearchesPage
         _resources = resources;
         Title = _resources.GetResource("Pages_SavedQueries");
         Name = Title; // Title is for the Page, Name is for the command
-        Icon = IconLoader.GetIcon("QueryList");
+        Icon = IconLoader.GetIcon("QueryGlyph");
         _addQueryListItem = addQueryListItem;
         _queryRepository = queryRepository;
         _searchPageFactory = searchPageFactory;
