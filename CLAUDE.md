@@ -163,7 +163,7 @@ Main extension class: `AzureExtension.cs` (GUID: `23c9363b-1ade-4017-afa7-f57f03
 
 **Top-level commands:**
 - When not authenticated: Sign In page
-- When authenticated: Saved Queries, Saved Pull Request Searches, Saved Pipeline Searches, Sign Out, and any pinned searches
+- When authenticated: My Work Items, Saved Queries, Saved Pull Request Searches, Saved Pipeline Searches, Sign Out, and any pinned searches
 
 ### Authentication System
 
@@ -204,6 +204,7 @@ Main extension class: `AzureExtension.cs` (GUID: `23c9363b-1ade-4017-afa7-f57f03
 1. `AzureDataQueryManager` - Fetches work item query results (handles tree/flat/one-hop queries)
 2. `AzureDataPullRequestSearchManager` - Fetches pull requests with criteria and policy evaluation
 3. `AzureDataPipelineUpdater` - Fetches build definitions and builds
+4. `AzureDataMyWorkItemsManager` - Generates WIQL at runtime to fetch active work items assigned to the current user across configured projects
 
 **Update Pipeline:**
 ```
@@ -218,7 +219,7 @@ IDataUpdater implementations (Query/PR/Pipeline managers)
 
 **Two SQLite databases:**
 1. `AzureData.db` - Cache data (volatile, 7-day retention for work items)
-2. `PersistentAzureData.db` - User searches and settings
+2. `PersistentAzureData.db` - User searches, settings, and project configurations
 
 **Core data objects:**
 - `WorkItem` - Work item details (title, state, assignments, dates)
@@ -239,6 +240,11 @@ Project (1:N)
 Supporting: Identity, WorkItemType, PullRequestSearch, PullRequestPolicyStatus, etc.
 ```
 
+**Persistent data (in `PersistentData/`):**
+- `ProjectSettings` - Saved Azure DevOps project configurations (org URL + project name), used by My Work Items to know which projects to query
+- `ProjectSettingsRepository` - CRUD operations for project settings
+- Search repositories for queries, PR searches, and pipeline searches
+
 **Data access:** Dapper ORM with transaction support for consistency
 
 ### UI and Page System
@@ -246,6 +252,8 @@ Supporting: Identity, WorkItemType, PullRequestSearch, PullRequestPolicyStatus, 
 **Page Hierarchy:**
 - `SignInPage` / `SignOutPage` - Authentication
 - `SavedQueriesPage`, `SavedPullRequestSearchesPage`, `SavedPipelineSearchesPage` - Main search management pages
+- `SavedProjectsPage` / `SaveProjectSettingsPage` - Project configuration for My Work Items
+- `MyWorkItemsPage` - Displays active work items assigned to the current user
 - `SearchPages` - Dynamic pages from `SearchPageFactory` showing actual search results
 
 **User workflow:**
@@ -309,6 +317,7 @@ AzureExtension/                    # Main extension project
 │   └── DataObjects/              # Entity classes (WorkItem, PullRequest, Build, etc.)
 ├── DataStore/                     # SQLite data access layer (Dapper)
 ├── Helpers/                       # Utility classes
+├── PersistentData/                # User-facing saved searches and project settings (PersistentAzureData.db)
 ├── Providers/                     # Auth and service providers
 ├── Strings/                       # Localization resources
 ├── Widgets/                       # Widget implementations
@@ -324,11 +333,13 @@ AzureExtension.Test/               # Test project (MSTest + Moq)
 build/                             # Build scripts and props
 ├── scripts/
 │   ├── Build.ps1                 # Main build script
+│   ├── Test.ps1                  # Test runner (excludes LiveData tests)
 │   └── CertSignAndInstall.ps1    # Certificate signing
 └── EnsureOutputLayout.props
 
 docs/                              # Documentation
-└── quickstartguide.md            # User quick start guide
+├── quickstartguide.md            # User quick start guide
+└── ROADMAP.md                    # Feature roadmap with implementation details
 ```
 
 ## Dependencies
