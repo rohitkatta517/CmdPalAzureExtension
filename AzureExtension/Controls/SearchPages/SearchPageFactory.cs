@@ -2,6 +2,7 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using AzureExtension.Account;
 using AzureExtension.Client;
 using AzureExtension.Controls.Commands;
@@ -12,7 +13,7 @@ using Microsoft.CommandPalette.Extensions.Toolkit;
 
 namespace AzureExtension.Controls.Pages;
 
-public class SearchPageFactory : ISearchPageFactory
+public class SearchPageFactory : ISearchPageFactory, IDisposable
 {
     private readonly IResources _resources;
     private readonly SavedAzureSearchesMediator _mediator;
@@ -28,6 +29,10 @@ public class SearchPageFactory : ISearchPageFactory
     private readonly ILiveSearchDataProvider<IDefinition> _definitionProvider;
     private readonly IDictionary<Type, IAzureSearchRepository> _azureSearchRepositories;
     private readonly TimeSpanHelper _timeSpanHelper;
+
+    private readonly ConcurrentDictionary<string, IListItem> _itemCache = new();
+    private readonly ConcurrentDictionary<string, ListPage> _pageCache = new();
+    private readonly ConcurrentDictionary<string, ContentPage> _editPageCache = new();
 
     public SearchPageFactory(
         IResources resources,
@@ -62,9 +67,55 @@ public class SearchPageFactory : ISearchPageFactory
         _buildProvider = buildProvider;
         _definitionProvider = definitionProvider;
         _timeSpanHelper = timeSpanHelper;
+
+        _mediator.SearchUpdated += OnSearchUpdated;
     }
 
+    private void OnSearchUpdated(object? sender, SearchUpdatedEventArgs args)
+    {
+        ClearCaches();
+    }
+
+    public void ClearCaches()
+    {
+        _itemCache.Clear();
+        _pageCache.Clear();
+        _editPageCache.Clear();
+    }
+
+    private bool _disposed;
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _mediator.SearchUpdated -= OnSearchUpdated;
+            }
+
+            _disposed = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    private static string GetCacheKey(IAzureSearch search) =>
+        search is IMyWorkItemsSearch mw
+            ? $"MyWorkItems:{mw.OrganizationUrl}|{mw.ProjectName}"
+            : $"{search.GetType().Name}:{search.Url}|{search.Name}";
+
     public ListPage CreatePageForSearch(IAzureSearch search)
+    {
+        var key = GetCacheKey(search);
+        return _pageCache.GetOrAdd(key, _ => CreatePageForSearchCore(search));
+    }
+
+    private ListPage CreatePageForSearchCore(IAzureSearch search)
     {
         if (search is IMyWorkItemsSearch myWorkItemsSearch)
         {
@@ -87,6 +138,12 @@ public class SearchPageFactory : ISearchPageFactory
     }
 
     public ContentPage CreateEditPageForSearch(IAzureSearch search)
+    {
+        var key = GetCacheKey(search);
+        return _editPageCache.GetOrAdd(key, _ => CreateEditPageForSearchCore(search));
+    }
+
+    private ContentPage CreateEditPageForSearchCore(IAzureSearch search)
     {
         if (search is IQuerySearch)
         {
@@ -113,6 +170,12 @@ public class SearchPageFactory : ISearchPageFactory
     }
 
     public IListItem CreateItemForSearch(IAzureSearch search)
+    {
+        var key = GetCacheKey(search);
+        return _itemCache.GetOrAdd(key, _ => CreateItemForSearchCore(search));
+    }
+
+    private IListItem CreateItemForSearchCore(IAzureSearch search)
     {
         if (search is IMyWorkItemsSearch myWorkItemsSearch)
         {

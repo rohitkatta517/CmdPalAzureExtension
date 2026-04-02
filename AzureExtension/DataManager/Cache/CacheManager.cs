@@ -147,6 +147,8 @@ public sealed class CacheManager : IDisposable, ICacheManager
     {
         _logger.Information($"Starting update of type {parameters.UpdateType}.");
 
+        _cancelSource.Cancel();
+        _cancelSource.Dispose();
         _cancelSource = new CancellationTokenSource();
         parameters.CancellationToken = _cancelSource.Token;
 

@@ -7,18 +7,38 @@ using Microsoft.CommandPalette.Extensions.Toolkit;
 
 namespace AzureExtension.Controls.Pages;
 
-public abstract class SavedSearchesPage : ListPage
+public abstract class SavedSearchesPage : ListPage, IDisposable
 {
     protected abstract SearchUpdatedType SearchUpdatedType { get; }
 
     protected abstract string ExceptionMessage { get; }
 
     private readonly SavedAzureSearchesMediator _mediator;
+    private bool _disposed;
 
     public SavedSearchesPage(SavedAzureSearchesMediator mediator)
     {
         _mediator = mediator;
         _mediator.SearchUpdated += OnSearchUpdated;
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _mediator.SearchUpdated -= OnSearchUpdated;
+            }
+
+            _disposed = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
     private void OnSearchUpdated(object? sender, SearchUpdatedEventArgs args)

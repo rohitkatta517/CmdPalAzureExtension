@@ -42,6 +42,7 @@ public class PeriodicDataUpdater : IDisposable
         }
 
         _started = true;
+        _cancelSource?.Dispose();
         _cancelSource = new CancellationTokenSource();
         await Task.Run(async () =>
         {
@@ -73,6 +74,8 @@ public class PeriodicDataUpdater : IDisposable
 
             if (disposing)
             {
+                _cancelSource?.Cancel();
+                _cancelSource?.Dispose();
                 _timer.Dispose();
             }
 

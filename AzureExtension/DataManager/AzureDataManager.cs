@@ -82,6 +82,7 @@ public class AzureDataManager : IDataUpdateService
         {
             tx.Rollback();
             _log.Error(ex, $"Error during update: {ex.Message}");
+            OnUpdate?.Invoke(this, new DataManagerUpdateEventArgs(DataManagerUpdateKind.Error, parameters, ex));
             return;
         }
 

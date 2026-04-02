@@ -9,7 +9,7 @@ using Serilog;
 
 namespace AzureExtension.DataManager;
 
-public class LiveDataProvider : ILiveDataProvider
+public class LiveDataProvider : ILiveDataProvider, IDisposable
 {
     private readonly ILogger _log;
 
@@ -113,5 +113,11 @@ public class LiveDataProvider : ILiveDataProvider
             UpdateObject = search,
         });
         return (TSearchDataType)searchDataProvider.GetDataForSearch(search)!;
+    }
+
+    public void Dispose()
+    {
+        _cacheManager.OnUpdate -= OnCacheManagerUpdate;
+        GC.SuppressFinalize(this);
     }
 }

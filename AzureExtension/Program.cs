@@ -192,7 +192,7 @@ public sealed class Program
             { typeof(IMyWorkItemsSearch), myWorkItemsManager },
         };
 
-        var dataProvider = new LiveDataProvider(cacheManager, contentProvidersDictionary, searchDataProvidersDictionary);
+        using var dataProvider = new LiveDataProvider(cacheManager, contentProvidersDictionary, searchDataProvidersDictionary);
 
         var path = ResourceLoader.GetDefaultResourceFilePath();
         var resourceLoader = new ResourceLoader(path);

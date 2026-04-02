@@ -61,6 +61,36 @@ public class AzureDataPullRequestSearchManager
     {
         ValidateDataStore();
         var account = _accountProvider.GetDefaultAccount();
+
+        if (IsCombinedSearch(pullRequestSearch))
+        {
+            // Combined searches don't have their own DB rows — their data lives
+            // in the per-repo PullRequestSearch records.  We return the first
+            // non-null per-repo result here only as a sentinel so that
+            // WaitForLoadingDataIfNull sees a non-null value and stops blocking.
+            // The actual aggregated pull request list is built by GetDataObjects().
+            var view = GetPullRequestView(pullRequestSearch.View);
+            var perRepoSearches = _pullRequestSearchRepository.GetSavedSearches()
+                .Where(s => !IsCombinedSearch(s) && GetPullRequestView(s.View) == view);
+            foreach (var perRepoSearch in perRepoSearches)
+            {
+                var azureUriPerRepo = new AzureUri(perRepoSearch.Url);
+                var result = PullRequestSearch.Get(
+                    _dataStore,
+                    azureUriPerRepo.Organization,
+                    azureUriPerRepo.Project,
+                    azureUriPerRepo.Repository,
+                    account.Username,
+                    view);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
         var azureUri = new AzureUri(pullRequestSearch.Url);
         return PullRequestSearch.Get(
             _dataStore,

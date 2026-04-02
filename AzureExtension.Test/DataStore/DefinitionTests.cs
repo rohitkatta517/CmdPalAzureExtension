@@ -40,7 +40,7 @@ public class DefinitionTests
 
     [TestMethod]
     [TestCategory("Unit")]
-    public void AddOrUpdate_ShouldNotUpdate_WhenWithinThreshold()
+    public void AddOrUpdate_ShouldOnlyUpdateTimestamp_WhenWithinThreshold()
     {
         // Arrange: Create a data store and add an initial definition
         using var dataStore = new DataStore("TestStore", TestHelpers.GetDataStoreFilePath(TestOptions), TestOptions.DataStoreOptions.DataStoreSchema!);
@@ -84,11 +84,15 @@ public class DefinitionTests
 
         var definition2 = Definition.GetOrCreate(dataStore, defRef2, project.Id);
 
-        // Assert: Should return existing definition without updating
+        // Assert: Should reuse same record but update TimeUpdated (so IsNewOrStale doesn't loop)
         Assert.AreEqual(definition1.Id, definition2.Id);
-        Assert.AreEqual(originalTimeUpdated, definition2.TimeUpdated, "TimeUpdated should not change when within threshold");
+        Assert.IsTrue(definition2.TimeUpdated >= originalTimeUpdated, "TimeUpdated should be updated to prevent infinite refresh loops");
+
+        // Name should NOT change within threshold (only TimeUpdated is touched)
+        var persisted = Definition.GetByInternalId(dataStore, 123);
+        Assert.AreEqual("Test Pipeline", persisted!.Name, "Name should not change when within threshold");
         TestContext?.WriteLine($"Second definition has TimeUpdated: {definition2.TimeUpdated}");
-        TestContext?.WriteLine("Definition was correctly NOT updated (within threshold)");
+        TestContext?.WriteLine("Definition correctly updated only TimeUpdated (within threshold)");
     }
 
     [TestMethod]

@@ -132,6 +132,12 @@ public class Definition : IDefinition
             }
             else
             {
+                // Always update TimeUpdated so IsNewOrStale knows we just
+                // checked this definition, even when skipping the full update.
+                existingDefinition.TimeUpdated = definition.TimeUpdated;
+                dataStore.Connection!.Execute(
+                    "UPDATE Definition SET TimeUpdated = @TimeUpdated WHERE Id = @Id",
+                    new { definition.TimeUpdated, existingDefinition.Id });
                 return existingDefinition;
             }
         }

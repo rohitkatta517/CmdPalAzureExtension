@@ -11,7 +11,7 @@ using Microsoft.CommandPalette.Extensions;
 
 namespace AzureExtension.Controls.Pages;
 
-public class SavedPipelineSearchesPage : SavedSearchesPage, IDisposable
+public class SavedPipelineSearchesPage : SavedSearchesPage
 {
     private readonly IResources _resources;
     private readonly AddPipelineSearchListItem _addPipelineSearchListItem;
@@ -80,7 +80,7 @@ public class SavedPipelineSearchesPage : SavedSearchesPage, IDisposable
     // Disposing area
     private bool _disposed;
 
-    private void Dispose(bool disposing)
+    protected override void Dispose(bool disposing)
     {
         if (!_disposed)
         {
@@ -91,11 +91,7 @@ public class SavedPipelineSearchesPage : SavedSearchesPage, IDisposable
 
             _disposed = true;
         }
-    }
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+        base.Dispose(disposing);
     }
 }

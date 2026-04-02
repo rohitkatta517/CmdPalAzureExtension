@@ -31,6 +31,10 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
     private readonly SavedProjectsPage _savedProjectsPage;
     private readonly BoardLinkRepository _boardLinkRepository;
     private readonly SavedBoardLinksPage _savedBoardLinksPage;
+    private readonly List<ListItem> _defaultCommands;
+    private readonly object _cacheLock = new();
+    private ICommandItem[]? _cachedTopLevelCommands;
+    private bool _topLevelCommandsDirty = true;
 
     public AzureExtensionCommandProvider(
         SignInPage signInPage,
@@ -68,6 +72,16 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
         _savedSearchesMediator.SearchUpdated += OnSearchUpdated;
         _authenticationMediator.SignInAction += OnSignInStatusChanged;
         _authenticationMediator.SignOutAction += OnSignInStatusChanged;
+
+        _defaultCommands = new List<ListItem>
+        {
+            new(_savedProjectsPage),
+            new(_savedBoardLinksPage),
+            new(_savedQueriesPage),
+            new(_savedPullRequestSearchesPage),
+            new(_savedPipelineSearchesPage),
+            new(_signOutPage),
+        };
     }
 
     private void OnLiveDataUpdate(object? source, CacheManagerUpdateEventArgs e)
@@ -76,6 +90,11 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
         {
             if (e.DataUpdateParameters.UpdateType == DataUpdateType.All)
             {
+                lock (_cacheLock)
+                {
+                    _topLevelCommandsDirty = true;
+                }
+
                 RaiseItemsChanged(0);
             }
         }
@@ -83,6 +102,12 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
 
     private void OnSignInStatusChanged(object? sender, SignInStatusChangedEventArgs e)
     {
+        lock (_cacheLock)
+        {
+            _topLevelCommandsDirty = true;
+            _cachedTopLevelCommands = null;
+        }
+
         RaiseItemsChanged();
     }
 
@@ -90,6 +115,11 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
     {
         if (args.Exception == null)
         {
+            lock (_cacheLock)
+            {
+                _topLevelCommandsDirty = true;
+            }
+
             RaiseItemsChanged();
         }
     }
@@ -103,8 +133,14 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
                 new CommandItem(_signInPage),
             };
         }
-        else
+
+        lock (_cacheLock)
         {
+            if (!_topLevelCommandsDirty && _cachedTopLevelCommands != null)
+            {
+                return _cachedTopLevelCommands;
+            }
+
             var topLevelCommands = GetTopLevelSearches().GetAwaiter().GetResult();
 
             var myWorkItemsCommands = GetMyWorkItemsCommands();
@@ -113,19 +149,12 @@ public partial class AzureExtensionCommandProvider : CommandProvider, IDisposabl
             var boardLinkCommands = GetBoardLinkCommands();
             topLevelCommands.AddRange(boardLinkCommands);
 
-            var defaultCommands = new List<ListItem>
-            {
-                new(_savedProjectsPage),
-                new(_savedBoardLinksPage),
-                new(_savedQueriesPage),
-                new(_savedPullRequestSearchesPage),
-                new(_savedPipelineSearchesPage),
-                new(_signOutPage),
-            };
+            topLevelCommands.AddRange(_defaultCommands);
 
-            topLevelCommands.AddRange(defaultCommands);
+            _cachedTopLevelCommands = topLevelCommands.ToArray();
+            _topLevelCommandsDirty = false;
 
-            return topLevelCommands.ToArray();
+            return _cachedTopLevelCommands;
         }
     }
 
